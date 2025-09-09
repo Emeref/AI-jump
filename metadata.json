@@ -1,0 +1,5 @@
+{
+  "name": "Pastel Jump",
+  "description": "A simple and aesthetic one-button game. Press the spacebar to make the ball jump and avoid the incoming pastel squares. Survive as long as you can to increase your score.",
+  "requestFramePermissions": []
+}
