@@ -54,12 +54,11 @@ export const OBSTACLE_RED_SPEED_MAX = GAME_WIDTH / OBSTACLE_RED_SPEED_SECONDS_MI
 
 
 // Gameplay Mechanics
-export const NUMBER_OF_OBSTACLE_SPAWN_LINES = 3;
 export const OBSTACLE_SPAWN_INTERVAL_PER_LINE_MIN = 0; // in ms
 export const OBSTACLE_SPAWN_INTERVAL_PER_LINE_MAX = 1500; // in ms
 
 // Points
-export const OBSTACLE_GOLD_POINTS = 15;
+export const OBSTACLE_GOLD_POINTS = 64;
 export const OBSTACLE_BLUE_POINTS = -1000; // Touch = game over
 export const OBSTACLE_RED_POINTS = -50; 
 
@@ -71,7 +70,7 @@ export const BLUE_OBSTACLE_SPAWN_CHANCE = 0.01; // 1% chance
 export const BLUE_OBSTACLE_MIN_SCORE_TO_APPEAR = 512; // Appears after 512 points
 
 // Chance of an obstacle being red (0.0 = 0%, 1.0 = 100%) - only after min score is reached
-export const RED_OBSTACLE_SPAWN_CHANCE = 0.05; // 1% chance
+export const RED_OBSTACLE_SPAWN_CHANCE = 0.05; // 5% chance
 export const RED_OBSTACLE_MIN_SCORE_TO_APPEAR = 1024; // Appears after 1024 points
 
 // Audio

@@ -83,23 +83,54 @@ const HallOfPay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     style: 'currency',
     currency: 'USD',
   });
+  
+  const getColorForRow = (index: number, totalRows: number): string => {
+    // First 5 rows: transition from black to a light gray
+    if (index < 5) {
+      const grayValue = Math.floor((150 / 5) * index);
+      return `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
+    }
+
+    // Remaining rows: transition through the rainbow
+    const hue = 300 - (300 * (index - 5)) / (totalRows - 5);
+    return `hsl(${hue}, 80%, 50%)`;
+  };
+
+  const scrollbarStyles = `
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: linear-gradient(to bottom, black, #999, hsl(300, 80%, 50%), hsl(240, 80%, 50%), hsl(120, 80%, 50%), hsl(60, 80%, 50%), hsl(0, 80%, 50%));
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(to bottom, #333, #bbb, hsl(300, 90%, 60%), hsl(240, 90%, 60%), hsl(120, 90%, 60%), hsl(60, 90%, 60%), hsl(0, 90%, 60%));
+    }
+  `;
 
   return (
     <Overlay>
+        <style>{scrollbarStyles}</style>
         <div className="relative w-full">
-            <h2 className="text-3xl font-bold text-teal-600 mb-4">Hall of Pay</h2>
-            <div className="bg-white/50 p-4 rounded-lg max-h-[60vh] overflow-y-auto">
+            <h2 className="text-3xl font-bold text-teal-600 mb-2">Hall of Pay</h2>
+            <p className="text-gray-500 text-sm mb-4 italic">First to donate on each level will be remembered forever. It can be you.</p>
+            <div className="bg-white/50 p-4 rounded-lg max-h-[400px] overflow-y-auto custom-scrollbar">
                 <table className="w-full text-left">
                     <thead>
                         <tr className="border-b-2 border-gray-300">
-                            <th className="p-2 font-bold text-gray-700">Value</th>
-                            <th className="p-2 font-bold text-gray-700">User</th>
+                            <th className="p-2 font-bold text-gray-700"></th>
+                            <th className="p-2 font-bold text-gray-700">Name</th>
                         </tr>
                     </thead>
                     <tbody>
                         {payData.map((row, index) => (
                             <tr key={index} className="border-b border-gray-200 last:border-b-0">
-                                <td className="p-2 font-mono">{currencyFormatter.format(row.value)}</td>
+                                <td className="p-2 font-mono" style={{ color: getColorForRow(index, payData.length) }}>{`${index + 1}. ${currencyFormatter.format(row.value)}`}</td>
                                 <td className="p-2 text-gray-500 opacity-75">{row.user}</td>
                             </tr>
                         ))}
@@ -117,6 +148,40 @@ const HallOfPay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
+const Settings: React.FC<{
+  onClose: () => void;
+  difficulty: number;
+  onDifficultyChange: (newDifficulty: number) => void;
+}> = ({ onClose, difficulty, onDifficultyChange }) => {
+  return (
+    <Overlay>
+      <div className="relative w-full">
+        <h2 className="text-3xl font-bold text-teal-600 mb-6">Settings</h2>
+        <div className="bg-white/50 p-6 rounded-lg">
+          <label htmlFor="difficulty" className="block text-gray-700 font-bold mb-2">
+            Difficulty: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{difficulty}</span>
+          </label>
+          <input
+            id="difficulty"
+            type="range"
+            min="1"
+            max="10"
+            value={difficulty}
+            onChange={(e) => onDifficultyChange(parseInt(e.target.value, 10))}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+          />
+        </div>
+        <button
+          onClick={onClose}
+          className="mt-8 px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </Overlay>
+  );
+};
+
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.PreGame);
@@ -126,8 +191,10 @@ const App: React.FC = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
   const [canRestart, setCanRestart] = useState(false);
-  const [gameOverReason, setGameOverReason] = useState<'score' | 'idle' | 'blue' | 'red'>('score');
+  const [gameOverReason, setGameOverReason] = useState<'score' | 'idle' | 'blue' | 'top'>('score');
   const [showHallOfPay, setShowHallOfPay] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [difficulty, setDifficulty] = useState(3);
 
 
   const jumpSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -153,7 +220,21 @@ const App: React.FC = () => {
     setCanRestart(false);
     setGameOverReason('score');
     setShowHallOfPay(false);
+    setShowSettings(false);
     setGameState(GameState.Playing);
+  }, []);
+
+  const goToStartScreen = useCallback(() => {
+    setScore(0);
+    setPlayerPositionY(C.PLAYER_GROUND_Y);
+    setPlayerVelocityY(0);
+    setGameStarted(false);
+    setObstacles([]);
+    setCanRestart(false);
+    setGameOverReason('score');
+    setShowHallOfPay(false);
+    setShowSettings(false);
+    setGameState(GameState.PreGame);
   }, []);
 
   const handleJump = useCallback(() => {
@@ -264,7 +345,12 @@ const App: React.FC = () => {
       setPlayerVelocityY(newVelocity);
       setPlayerPositionY(newPosition);
 
-      if (newPosition >= C.BOTTOM_BOUNDARY - C.PLAYER_SIZE || newPosition <= C.TOP_BOUNDARY) {
+      if (newPosition >= C.BOTTOM_BOUNDARY - C.PLAYER_SIZE) {
+        setGameState(GameState.GameOver);
+        return;
+      }
+      if (newPosition <= C.TOP_BOUNDARY) {
+        setGameOverReason('top');
         setGameState(GameState.GameOver);
         return;
       }
@@ -292,10 +378,10 @@ const App: React.FC = () => {
       setScore(s => s + scoredThisFrame);
     }
     
-    let gameOver = false;
-    const collectedGoldIds = new Set<number>();
-    const collectedRedIds = new Set<number>();
-
+    let scoreChange = 0;
+    const collidedObstacleIds = new Set<number>();
+    let shouldEndGame = false;
+    let endReason: typeof gameOverReason = 'score';
 
     for (const obstacle of movedObstacles) {
         const playerLeft = C.PLAYER_X_POSITION;
@@ -310,39 +396,44 @@ const App: React.FC = () => {
 
         if (playerRight > obstacleLeft && playerLeft < obstacleRight && playerBottom > obstacleTop && playerTop < obstacleBottom) {
              if (obstacle.type === 'normal' || obstacle.type === 'blue') {
-                 gameOver = true;
-                 if (obstacle.type === 'blue') {
-                     setGameOverReason('blue');
-                 } else if (!gameStarted) {
-                     setGameOverReason('idle');
-                 }
-                 break;
-             } else if (obstacle.type === 'red') {
-                collectedRedIds.add(obstacle.id);
-             } else { // gold
-                 collectedGoldIds.add(obstacle.id);
+                shouldEndGame = true;
+             }
+
+             if(obstacle.type === 'normal' && !gameStarted) {
+                endReason = 'idle';
+             }
+
+             if (obstacle.type === 'blue') {
+                endReason = 'blue';
+             }
+
+             if (!collidedObstacleIds.has(obstacle.id)) {
+                if (obstacle.type === 'gold') {
+                    scoreChange += C.OBSTACLE_GOLD_POINTS;
+                } else if (obstacle.type === 'red') {
+                    scoreChange += C.OBSTACLE_RED_POINTS;
+                } else if (obstacle.type === 'blue') {
+                    scoreChange += C.OBSTACLE_BLUE_POINTS;
+                }
+                collidedObstacleIds.add(obstacle.id);
              }
         }
     }
-
-    if (gameOver) {
+    
+    if (shouldEndGame) {
+        setScore(s => Math.max(0, s + scoreChange));
+        setGameOverReason(endReason);
         setGameState(GameState.GameOver);
         return;
     }
 
-    const collectedPointObstacles = new Set([...collectedGoldIds, ...collectedRedIds]);
-
-    if (collectedPointObstacles.size > 0) {
-        const pointsFromGold = collectedGoldIds.size * C.OBSTACLE_GOLD_POINTS;
-        const pointsFromRed = collectedRedIds.size * C.OBSTACLE_RED_POINTS;
-        const totalPointsChange = pointsFromGold + pointsFromRed;
-        
-        setScore(s => Math.max(0, s + totalPointsChange));
-        setObstacles(movedObstacles.filter(o => !collectedPointObstacles.has(o.id)));
-    } else {
-        setObstacles(movedObstacles);
+    if (scoreChange !== 0) {
+        setScore(s => Math.max(0, s + scoreChange));
     }
 
+    const remainingObstacles = movedObstacles.filter(o => !collidedObstacleIds.has(o.id));
+    setObstacles(remainingObstacles);
+    
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
   }, [gameState, obstacles, playerPositionY, playerVelocityY, gameStarted]);
@@ -388,7 +479,7 @@ const App: React.FC = () => {
       };
 
       // Start a spawn loop for each configured line.
-      for (let i = 0; i < C.NUMBER_OF_OBSTACLE_SPAWN_LINES; i++) {
+      for (let i = 0; i < difficulty; i++) {
         const spawnLoop = createSpawnLoop(i);
         // Stagger the initial start time for each line to avoid a burst of obstacles at once.
         const initialInterval = Math.random() * (C.OBSTACLE_SPAWN_INTERVAL_PER_LINE_MAX - C.OBSTACLE_SPAWN_INTERVAL_PER_LINE_MIN);
@@ -404,14 +495,14 @@ const App: React.FC = () => {
         obstacleSpawnersRef.current = []; // Clear the array of timer IDs.
       }
     };
-  }, [gameState, spawnObstacle]);
+  }, [gameState, spawnObstacle, difficulty]);
 
-  const getGameOverMessage = (score: number, reason: 'score' | 'idle' | 'blue' | 'red'): string => {
+  const getGameOverMessage = (score: number, reason: 'score' | 'idle' | 'blue' | 'top'): string => {
+      if (reason === 'top') {
+          return "You're a fast clicker, aren't you?";
+      }
       if (reason === 'blue') {
           return "Didn't expected that, right?";
-      }
-       if (reason === 'red') {
-          return "Too hot to handle!";
       }
       if (reason === 'idle') {
           return "Jump, don't be lazy";
@@ -426,7 +517,7 @@ const App: React.FC = () => {
       if (score <= 1024) {
           return 'Not terrible';
       }
-      return 'Congratulation';
+      return 'Congratulations';
   };
 
 
@@ -436,10 +527,10 @@ const App: React.FC = () => {
         Score: {score}
       </div>
 
-      {gameState === GameState.PreGame && !showHallOfPay && (
+      {gameState === GameState.PreGame && !showHallOfPay && !showSettings && (
         <Overlay>
             <h1 className="text-4xl font-bold text-teal-600 mb-2">Pastel Jump</h1>
-            <p className="text-gray-600 mb-6">Collect gold squares, figure out others</p>
+            <p className="text-gray-600 mb-6">Collect gold, figure out others</p>
             <div className="flex flex-col space-y-4 w-full">
                 <button
                     onClick={resetGame}
@@ -453,23 +544,39 @@ const App: React.FC = () => {
                 >
                     Hall of Pay
                 </button>
+                 <button
+                    onClick={() => setShowSettings(true)}
+                    className="px-8 py-3 bg-blue-500 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors"
+                >
+                    Settings
+                </button>
             </div>
         </Overlay>
       )}
 
       {showHallOfPay && <HallOfPay onClose={() => setShowHallOfPay(false)} />}
+      {showSettings && <Settings onClose={() => setShowSettings(false)} difficulty={difficulty} onDifficultyChange={setDifficulty} />}
+
 
       {gameState === GameState.GameOver && (
         <Overlay>
             <h2 className="text-3xl font-bold text-red-500 mb-2">{getGameOverMessage(score, gameOverReason)}</h2>
-            <p className="text-2xl text-gray-700 mb-4">Final Score: {score}</p>
-            <button
-                onClick={resetGame}
-                disabled={!canRestart}
-                className={`px-8 py-3 bg-teal-500 text-white font-bold rounded-lg shadow-md hover:bg-teal-600 transition-colors ${!canRestart && 'opacity-50 cursor-not-allowed'}`}
-            >
-                Press Space to Play Again
-            </button>
+            <p className="text-2xl text-gray-700 mb-6">Final Score: {score}</p>
+            <div className="flex flex-col space-y-4 w-full">
+              <button
+                  onClick={resetGame}
+                  disabled={!canRestart}
+                  className={`px-8 py-3 bg-teal-500 text-white font-bold rounded-lg shadow-md hover:bg-teal-600 transition-colors ${!canRestart && 'opacity-50 cursor-not-allowed'}`}
+              >
+                  Press space to play again
+              </button>
+              <button
+                  onClick={goToStartScreen}
+                  className="px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
+              >
+                  Close
+              </button>
+            </div>
         </Overlay>
       )}
 
