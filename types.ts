@@ -11,5 +11,5 @@ export type Obstacle = {
   y: number;
   direction: 'left' | 'right';
   speed: number;
-  type: 'normal' | 'gold' | 'blue';
+  type: 'normal' | 'gold' | 'blue' | 'red';
 };

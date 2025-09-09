@@ -31,7 +31,11 @@ const ObstacleComponent: React.FC<{ obstacle: Obstacle }> = ({ obstacle }) => {
     } else if (obstacle.type === 'blue') {
         bgColor = 'bg-blue-500';
         style.boxShadow = '0 0 10px 2px rgba(59, 130, 246, 0.7)'; // Glow effect
+    } else if (obstacle.type === 'red') {
+        bgColor = 'bg-red-500';
+        style.boxShadow = '0 0 10px 2px rgba(239, 68, 68, 0.7)'; // Red glow effect
     }
+
 
     return (
       <div
@@ -54,11 +58,65 @@ const GameScreen: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 const Overlay: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center text-center z-10 p-4">
-        <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg">
+        <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg w-full max-w-sm">
             {children}
         </div>
     </div>
 );
+
+const HallOfPay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const [payData, setPayData] = useState<{ value: number; user: string }[]>([]);
+
+  useEffect(() => {
+    const generatePayData = () => {
+      const values = [0.01, 0.02, 0.03, 0.05, 0.08];
+      for (let i = 5; i < 50; i++) {
+        const nextValue = values[i - 1] + values[i - 2];
+        values.push(nextValue);
+      }
+      return values.map(value => ({ value, user: 'Username' }));
+    };
+    setPayData(generatePayData());
+  }, []);
+
+  const currencyFormatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  });
+
+  return (
+    <Overlay>
+        <div className="relative w-full">
+            <h2 className="text-3xl font-bold text-teal-600 mb-4">Hall of Pay</h2>
+            <div className="bg-white/50 p-4 rounded-lg max-h-[60vh] overflow-y-auto">
+                <table className="w-full text-left">
+                    <thead>
+                        <tr className="border-b-2 border-gray-300">
+                            <th className="p-2 font-bold text-gray-700">Value</th>
+                            <th className="p-2 font-bold text-gray-700">User</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {payData.map((row, index) => (
+                            <tr key={index} className="border-b border-gray-200 last:border-b-0">
+                                <td className="p-2 font-mono">{currencyFormatter.format(row.value)}</td>
+                                <td className="p-2 text-gray-500 opacity-75">{row.user}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+             <button
+                onClick={onClose}
+                className="mt-6 px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
+            >
+                Close
+            </button>
+        </div>
+    </Overlay>
+  );
+};
+
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.PreGame);
@@ -68,7 +126,8 @@ const App: React.FC = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
   const [canRestart, setCanRestart] = useState(false);
-  const [gameOverReason, setGameOverReason] = useState<'score' | 'idle' | 'blue'>('score');
+  const [gameOverReason, setGameOverReason] = useState<'score' | 'idle' | 'blue' | 'red'>('score');
+  const [showHallOfPay, setShowHallOfPay] = useState(false);
 
 
   const jumpSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -93,6 +152,7 @@ const App: React.FC = () => {
     setObstacles([]);
     setCanRestart(false);
     setGameOverReason('score');
+    setShowHallOfPay(false);
     setGameState(GameState.Playing);
   }, []);
 
@@ -140,7 +200,9 @@ const App: React.FC = () => {
     
     let type: Obstacle['type'];
 
-    if (currentScore >= C.BLUE_OBSTACLE_MIN_SCORE_TO_APPEAR && Math.random() < C.BLUE_OBSTACLE_SPAWN_CHANCE) {
+    if (currentScore >= C.RED_OBSTACLE_MIN_SCORE_TO_APPEAR && Math.random() < C.RED_OBSTACLE_SPAWN_CHANCE) {
+      type = 'red';
+    } else if (currentScore >= C.BLUE_OBSTACLE_MIN_SCORE_TO_APPEAR && Math.random() < C.BLUE_OBSTACLE_SPAWN_CHANCE) {
       type = 'blue';
     } else if (Math.random() < C.GOLD_OBSTACLE_SPAWN_CHANCE) {
       type = 'gold';
@@ -161,6 +223,11 @@ const App: React.FC = () => {
         const startY = C.GAME_HEIGHT * C.OBSTACLE_BLUE_SPAWN_Y_MIN_PERCENT;
         y = startY + Math.random() * spawnRangeY;
         speed = C.OBSTACLE_BLUE_SPEED_MIN + Math.random() * (C.OBSTACLE_BLUE_SPEED_MAX - C.OBSTACLE_BLUE_SPEED_MIN);
+    } else if (type === 'red') {
+        const spawnRangeY = C.GAME_HEIGHT * (C.OBSTACLE_RED_SPAWN_Y_MAX_PERCENT - C.OBSTACLE_RED_SPAWN_Y_MIN_PERCENT);
+        const startY = C.GAME_HEIGHT * C.OBSTACLE_RED_SPAWN_Y_MIN_PERCENT;
+        y = startY + Math.random() * spawnRangeY;
+        speed = C.OBSTACLE_RED_SPEED_MIN + Math.random() * (C.OBSTACLE_RED_SPEED_MAX - C.OBSTACLE_RED_SPEED_MIN);
     } else { // normal
         const spawnRangeY = C.GAME_HEIGHT * (C.OBSTACLE_NORMAL_SPAWN_Y_MAX_PERCENT - C.OBSTACLE_NORMAL_SPAWN_Y_MIN_PERCENT);
         const startY = C.GAME_HEIGHT * C.OBSTACLE_NORMAL_SPAWN_Y_MIN_PERCENT;
@@ -227,6 +294,8 @@ const App: React.FC = () => {
     
     let gameOver = false;
     const collectedGoldIds = new Set<number>();
+    const collectedRedIds = new Set<number>();
+
 
     for (const obstacle of movedObstacles) {
         const playerLeft = C.PLAYER_X_POSITION;
@@ -248,7 +317,9 @@ const App: React.FC = () => {
                      setGameOverReason('idle');
                  }
                  break;
-             } else {
+             } else if (obstacle.type === 'red') {
+                collectedRedIds.add(obstacle.id);
+             } else { // gold
                  collectedGoldIds.add(obstacle.id);
              }
         }
@@ -259,12 +330,19 @@ const App: React.FC = () => {
         return;
     }
 
-    if (collectedGoldIds.size > 0) {
-      setScore(s => s + collectedGoldIds.size * 5);
-      setObstacles(movedObstacles.filter(o => !collectedGoldIds.has(o.id)));
+    const collectedPointObstacles = new Set([...collectedGoldIds, ...collectedRedIds]);
+
+    if (collectedPointObstacles.size > 0) {
+        const pointsFromGold = collectedGoldIds.size * C.OBSTACLE_GOLD_POINTS;
+        const pointsFromRed = collectedRedIds.size * C.OBSTACLE_RED_POINTS;
+        const totalPointsChange = pointsFromGold + pointsFromRed;
+        
+        setScore(s => Math.max(0, s + totalPointsChange));
+        setObstacles(movedObstacles.filter(o => !collectedPointObstacles.has(o.id)));
     } else {
-      setObstacles(movedObstacles);
+        setObstacles(movedObstacles);
     }
+
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
   }, [gameState, obstacles, playerPositionY, playerVelocityY, gameStarted]);
@@ -328,9 +406,12 @@ const App: React.FC = () => {
     };
   }, [gameState, spawnObstacle]);
 
-  const getGameOverMessage = (score: number, reason: 'score' | 'idle' | 'blue'): string => {
+  const getGameOverMessage = (score: number, reason: 'score' | 'idle' | 'blue' | 'red'): string => {
       if (reason === 'blue') {
           return "Didn't expected that, right?";
+      }
+       if (reason === 'red') {
+          return "Too hot to handle!";
       }
       if (reason === 'idle') {
           return "Jump, don't be lazy";
@@ -355,18 +436,28 @@ const App: React.FC = () => {
         Score: {score}
       </div>
 
-      {gameState === GameState.PreGame && (
+      {gameState === GameState.PreGame && !showHallOfPay && (
         <Overlay>
             <h1 className="text-4xl font-bold text-teal-600 mb-2">Pastel Jump</h1>
-            <p className="text-gray-600 mb-6">Collect gold squares, avoid teal ones.</p>
-            <button
-                onClick={resetGame}
-                className="px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
-            >
-                Press Space to Start
-            </button>
+            <p className="text-gray-600 mb-6">Collect gold squares, figure out others</p>
+            <div className="flex flex-col space-y-4 w-full">
+                <button
+                    onClick={resetGame}
+                    className="px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
+                >
+                    Press Space to Start
+                </button>
+                <button
+                    onClick={() => setShowHallOfPay(true)}
+                    className="px-8 py-3 bg-teal-500 text-white font-bold rounded-lg shadow-md hover:bg-teal-600 transition-colors"
+                >
+                    Hall of Pay
+                </button>
+            </div>
         </Overlay>
       )}
+
+      {showHallOfPay && <HallOfPay onClose={() => setShowHallOfPay(false)} />}
 
       {gameState === GameState.GameOver && (
         <Overlay>
