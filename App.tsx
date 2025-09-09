@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GameState, Obstacle } from './types';
 import * as C from './constants';
@@ -16,17 +17,26 @@ const Player: React.FC<{ y: number }> = ({ y }) => (
 );
 
 const ObstacleComponent: React.FC<{ obstacle: Obstacle }> = ({ obstacle }) => {
-    const bgColor = obstacle.type === 'gold' ? 'bg-yellow-400' : 'bg-teal-400';
+    const style: React.CSSProperties = {
+      width: C.OBSTACLE_SIZE,
+      height: C.OBSTACLE_SIZE,
+      left: obstacle.x,
+      top: obstacle.y,
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    };
+    let bgColor = 'bg-teal-400';
+
+    if (obstacle.type === 'gold') {
+        bgColor = 'bg-yellow-400';
+    } else if (obstacle.type === 'blue') {
+        bgColor = 'bg-blue-500';
+        style.boxShadow = '0 0 10px 2px rgba(59, 130, 246, 0.7)'; // Glow effect
+    }
+
     return (
       <div
         className={`absolute rounded-lg ${bgColor}`}
-        style={{
-          width: C.OBSTACLE_SIZE,
-          height: C.OBSTACLE_SIZE,
-          left: obstacle.x,
-          top: obstacle.y,
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        }}
+        style={style}
       />
     );
 };
@@ -57,12 +67,20 @@ const App: React.FC = () => {
   const [playerVelocityY, setPlayerVelocityY] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
+  const [canRestart, setCanRestart] = useState(false);
+  const [gameOverReason, setGameOverReason] = useState<'score' | 'idle' | 'blue'>('score');
+
 
   const jumpSoundRef = useRef<HTMLAudioElement | null>(null);
   const gameLoopRef = useRef<number | null>(null);
   const obstacleSpawnersRef = useRef<number[]>([]);
   const lastFrameTimeRef = useRef(0);
+  const scoreRef = useRef(score);
 
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
+  
   useEffect(() => {
     jumpSoundRef.current = new Audio(C.JUMP_SOUND_BASE64);
   }, []);
@@ -73,6 +91,8 @@ const App: React.FC = () => {
     setPlayerVelocityY(0);
     setGameStarted(false);
     setObstacles([]);
+    setCanRestart(false);
+    setGameOverReason('score');
     setGameState(GameState.Playing);
   }, []);
 
@@ -102,42 +122,54 @@ const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        if (gameState === GameState.PreGame || gameState === GameState.GameOver) {
+        if (gameState === GameState.PreGame || (gameState === GameState.GameOver && canRestart)) {
           resetGame();
-        } else {
+        } else if (gameState === GameState.Playing) {
           handleJump();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState, handleJump, resetGame]);
+  }, [gameState, handleJump, resetGame, canRestart]);
 
 
   const spawnObstacle = useCallback(() => {
     const direction = Math.random() < 0.5 ? 'left' : 'right';
-    const type = Math.random() < C.GOLD_OBSTACLE_SPAWN_CHANCE ? 'gold' : 'normal';
+    const currentScore = scoreRef.current;
+    
+    let type: Obstacle['type'];
+
+    if (currentScore >= C.BLUE_OBSTACLE_MIN_SCORE_TO_APPEAR && Math.random() < C.BLUE_OBSTACLE_SPAWN_CHANCE) {
+      type = 'blue';
+    } else if (Math.random() < C.GOLD_OBSTACLE_SPAWN_CHANCE) {
+      type = 'gold';
+    } else {
+      type = 'normal';
+    }
     
     let y;
+    let speed;
+
     if (type === 'gold') {
         const spawnRangeY = C.GAME_HEIGHT * (C.OBSTACLE_GOLD_SPAWN_Y_MAX_PERCENT - C.OBSTACLE_GOLD_SPAWN_Y_MIN_PERCENT);
         const startY = C.GAME_HEIGHT * C.OBSTACLE_GOLD_SPAWN_Y_MIN_PERCENT;
         y = startY + Math.random() * spawnRangeY;
-    } else {
+        speed = C.OBSTACLE_GOLD_SPEED_MIN + Math.random() * (C.OBSTACLE_GOLD_SPEED_MAX - C.OBSTACLE_GOLD_SPEED_MIN);
+    } else if (type === 'blue') {
+        const spawnRangeY = C.GAME_HEIGHT * (C.OBSTACLE_BLUE_SPAWN_Y_MAX_PERCENT - C.OBSTACLE_BLUE_SPAWN_Y_MIN_PERCENT);
+        const startY = C.GAME_HEIGHT * C.OBSTACLE_BLUE_SPAWN_Y_MIN_PERCENT;
+        y = startY + Math.random() * spawnRangeY;
+        speed = C.OBSTACLE_BLUE_SPEED_MIN + Math.random() * (C.OBSTACLE_BLUE_SPEED_MAX - C.OBSTACLE_BLUE_SPEED_MIN);
+    } else { // normal
         const spawnRangeY = C.GAME_HEIGHT * (C.OBSTACLE_NORMAL_SPAWN_Y_MAX_PERCENT - C.OBSTACLE_NORMAL_SPAWN_Y_MIN_PERCENT);
         const startY = C.GAME_HEIGHT * C.OBSTACLE_NORMAL_SPAWN_Y_MIN_PERCENT;
         y = startY + Math.random() * spawnRangeY;
+        speed = C.OBSTACLE_NORMAL_SPEED_MIN + Math.random() * (C.OBSTACLE_NORMAL_SPEED_MAX - C.OBSTACLE_NORMAL_SPEED_MIN);
     }
 
     // Ensure obstacle doesn't spawn off-screen
     y = Math.min(y, C.GAME_HEIGHT - C.OBSTACLE_SIZE);
-
-    let speed;
-    if (type === 'gold') {
-        speed = C.OBSTACLE_GOLD_SPEED_MIN + Math.random() * (C.OBSTACLE_GOLD_SPEED_MAX - C.OBSTACLE_GOLD_SPEED_MIN);
-    } else {
-        speed = C.OBSTACLE_NORMAL_SPEED_MIN + Math.random() * (C.OBSTACLE_NORMAL_SPEED_MAX - C.OBSTACLE_NORMAL_SPEED_MIN);
-    }
     
     setObstacles(prev => [
       ...prev,
@@ -208,8 +240,13 @@ const App: React.FC = () => {
         const obstacleBottom = obstacle.y + C.OBSTACLE_SIZE;
 
         if (playerRight > obstacleLeft && playerLeft < obstacleRight && playerBottom > obstacleTop && playerTop < obstacleBottom) {
-             if (obstacle.type === 'normal') {
+             if (obstacle.type === 'normal' || obstacle.type === 'blue') {
                  gameOver = true;
+                 if (obstacle.type === 'blue') {
+                     setGameOverReason('blue');
+                 } else if (!gameStarted) {
+                     setGameOverReason('idle');
+                 }
                  break;
              } else {
                  collectedGoldIds.add(obstacle.id);
@@ -243,6 +280,17 @@ const App: React.FC = () => {
       }
     };
   }, [gameState, gameLoop]);
+  
+  // Effect for handling the restart delay
+  useEffect(() => {
+      if (gameState === GameState.GameOver) {
+          setCanRestart(false);
+          const timer = setTimeout(() => {
+              setCanRestart(true);
+          }, 1000);
+          return () => clearTimeout(timer);
+      }
+  }, [gameState]);
 
   useEffect(() => {
     if (gameState === GameState.Playing) {
@@ -280,6 +328,26 @@ const App: React.FC = () => {
     };
   }, [gameState, spawnObstacle]);
 
+  const getGameOverMessage = (score: number, reason: 'score' | 'idle' | 'blue'): string => {
+      if (reason === 'blue') {
+          return "Didn't expected that, right?";
+      }
+      if (reason === 'idle') {
+          return "Jump, don't be lazy";
+      }
+      const specialScores = [69, 420, 2137];
+      if (specialScores.includes(score)) {
+          return 'Nice!';
+      }
+      if (score < 129) {
+          return 'Get Gud';
+      }
+      if (score <= 1024) {
+          return 'Not terrible';
+      }
+      return 'Congratulation';
+  };
+
 
   return (
     <GameScreen>
@@ -302,11 +370,12 @@ const App: React.FC = () => {
 
       {gameState === GameState.GameOver && (
         <Overlay>
-            <h2 className="text-3xl font-bold text-red-500 mb-2">Game Over</h2>
+            <h2 className="text-3xl font-bold text-red-500 mb-2">{getGameOverMessage(score, gameOverReason)}</h2>
             <p className="text-2xl text-gray-700 mb-4">Final Score: {score}</p>
             <button
                 onClick={resetGame}
-                className="px-8 py-3 bg-teal-500 text-white font-bold rounded-lg shadow-md hover:bg-teal-600 transition-colors"
+                disabled={!canRestart}
+                className={`px-8 py-3 bg-teal-500 text-white font-bold rounded-lg shadow-md hover:bg-teal-600 transition-colors ${!canRestart && 'opacity-50 cursor-not-allowed'}`}
             >
                 Press Space to Play Again
             </button>
