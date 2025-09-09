@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GameState, Obstacle } from './types';
+import { GameState, Obstacle, Cloud } from './types';
 import * as C from './constants';
 
 const Player: React.FC<{ y: number }> = ({ y }) => (
@@ -12,6 +12,7 @@ const Player: React.FC<{ y: number }> = ({ y }) => (
       left: C.PLAYER_X_POSITION,
       top: y,
       boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      zIndex: 10,
     }}
   />
 );
@@ -23,6 +24,7 @@ const ObstacleComponent: React.FC<{ obstacle: Obstacle }> = ({ obstacle }) => {
       left: obstacle.x,
       top: obstacle.y,
       boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      zIndex: 5,
     };
     let bgColor = 'bg-teal-400';
 
@@ -45,19 +47,22 @@ const ObstacleComponent: React.FC<{ obstacle: Obstacle }> = ({ obstacle }) => {
     );
 };
 
-const GameScreen: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex justify-center items-center min-h-screen bg-blue-50 font-sans">
-    <div
-      className="relative bg-blue-200 overflow-hidden rounded-2xl shadow-2xl"
-      style={{ width: C.GAME_WIDTH, height: C.GAME_HEIGHT }}
-    >
-      {children}
-    </div>
-  </div>
+const CloudComponent: React.FC<{ cloud: Cloud }> = ({ cloud }) => (
+  <div
+    className="absolute bg-white rounded-full"
+    style={{
+      left: cloud.x,
+      top: cloud.y,
+      width: cloud.size,
+      height: cloud.size / 2, // Make clouds oval
+      opacity: cloud.opacity,
+      zIndex: 1, // Behind everything else
+    }}
+  />
 );
 
 const Overlay: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center text-center z-10 p-4">
+    <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center text-center z-30 p-4">
         <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg w-full max-w-sm">
             {children}
         </div>
@@ -101,15 +106,16 @@ const HallOfPay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       width: 10px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.5);
+      background: rgba(0, 0, 0, 0.05);
       border-radius: 10px;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: linear-gradient(to bottom, black, #999, hsl(300, 80%, 50%), hsl(240, 80%, 50%), hsl(120, 80%, 50%), hsl(60, 80%, 50%), hsl(0, 80%, 50%));
+      background: #ffffff;
       border-radius: 10px;
+      border: 1px solid #e0e0e0;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(to bottom, #333, #bbb, hsl(300, 90%, 60%), hsl(240, 90%, 60%), hsl(120, 90%, 60%), hsl(60, 90%, 60%), hsl(0, 90%, 60%));
+      background: #f0f0f0;
     }
   `;
 
@@ -148,7 +154,7 @@ const HallOfPay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
-const Settings: React.FC<{
+const Other: React.FC<{
   onClose: () => void;
   difficulty: number;
   onDifficultyChange: (newDifficulty: number) => void;
@@ -156,20 +162,35 @@ const Settings: React.FC<{
   return (
     <Overlay>
       <div className="relative w-full">
-        <h2 className="text-3xl font-bold text-teal-600 mb-6">Settings</h2>
-        <div className="bg-white/50 p-6 rounded-lg">
-          <label htmlFor="difficulty" className="block text-gray-700 font-bold mb-2">
-            Difficulty: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{difficulty}</span>
-          </label>
-          <input
-            id="difficulty"
-            type="range"
-            min="1"
-            max="10"
-            value={difficulty}
-            onChange={(e) => onDifficultyChange(parseInt(e.target.value, 10))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-          />
+        <h2 className="text-3xl font-bold text-teal-600 mb-6">Other</h2>
+        <div className="bg-white/50 p-6 rounded-lg space-y-6">
+          <div>
+            <label htmlFor="difficulty" className="block text-gray-700 font-bold mb-2">
+              Difficulty: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{difficulty}</span>
+            </label>
+            <input
+              id="difficulty"
+              type="range"
+              min="1"
+              max="10"
+              value={difficulty}
+              onChange={(e) => onDifficultyChange(parseInt(e.target.value, 10))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            />
+          </div>
+          <div>
+            <a
+              href={C.DONATE_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full block px-8 py-3 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 transition-colors"
+            >
+              Donate
+            </a>
+            <p className="text-gray-500 text-xs mt-2 italic text-center">
+              If you donation will be big enough you will get to the 'Hall of Pay'.
+            </p>
+          </div>
         </div>
         <button
           onClick={onClose}
@@ -190,11 +211,13 @@ const App: React.FC = () => {
   const [playerVelocityY, setPlayerVelocityY] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
+  const [clouds, setClouds] = useState<Cloud[]>([]);
   const [canRestart, setCanRestart] = useState(false);
   const [gameOverReason, setGameOverReason] = useState<'score' | 'idle' | 'blue' | 'top'>('score');
   const [showHallOfPay, setShowHallOfPay] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showOther, setShowOther] = useState(false);
   const [difficulty, setDifficulty] = useState(3);
+  const [scale, setScale] = useState(1);
 
 
   const jumpSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -207,8 +230,37 @@ const App: React.FC = () => {
     scoreRef.current = score;
   }, [score]);
   
+  const createRandomCloud = (): Cloud => {
+    const size = C.CLOUD_MIN_SIZE + Math.random() * (C.CLOUD_MAX_SIZE - C.CLOUD_MIN_SIZE);
+    // Split clouds into two layers for parallax
+    const isFast = Math.random() > 0.5;
+    return {
+      id: Math.random(),
+      x: Math.random() * C.GAME_WIDTH,
+      y: C.CLOUD_Y_MIN + Math.random() * (C.CLOUD_Y_MAX - C.CLOUD_Y_MIN),
+      size: size,
+      speed: (isFast ? 1 : 0.5) * (C.CLOUD_SPEED_MIN + Math.random() * (C.CLOUD_SPEED_MAX - C.CLOUD_SPEED_MIN)),
+      opacity: (isFast ? 1 : 0.7) * (C.CLOUD_OPACITY_MIN + Math.random() * (C.CLOUD_OPACITY_MAX - C.CLOUD_OPACITY_MIN)),
+    };
+  };
+
   useEffect(() => {
     jumpSoundRef.current = new Audio(C.JUMP_SOUND_BASE64);
+    setClouds(Array.from({ length: C.CLOUD_COUNT }, createRandomCloud));
+  }, []);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const scale = Math.min(screenWidth / C.GAME_WIDTH, screenHeight / C.GAME_HEIGHT);
+      setScale(scale);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial calculation
+
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const resetGame = useCallback(() => {
@@ -220,7 +272,7 @@ const App: React.FC = () => {
     setCanRestart(false);
     setGameOverReason('score');
     setShowHallOfPay(false);
-    setShowSettings(false);
+    setShowOther(false);
     setGameState(GameState.Playing);
   }, []);
 
@@ -233,7 +285,7 @@ const App: React.FC = () => {
     setCanRestart(false);
     setGameOverReason('score');
     setShowHallOfPay(false);
-    setShowSettings(false);
+    setShowOther(false);
     setGameState(GameState.PreGame);
   }, []);
 
@@ -333,10 +385,31 @@ const App: React.FC = () => {
   }, []);
   
   const gameLoop = useCallback((currentTime: number) => {
-    if(gameState !== GameState.Playing) return;
-
-    const deltaTime = (currentTime - lastFrameTimeRef.current) / 1000; // in seconds
+    const deltaTime = (currentTime - lastFrameTimeRef.current) / 1000;
     lastFrameTimeRef.current = currentTime;
+
+    // Move clouds
+    if (deltaTime > 0) {
+      setClouds(prevClouds => prevClouds.map(cloud => {
+        let newX = cloud.x - cloud.speed * deltaTime;
+        if (newX < -cloud.size) {
+          // Reset cloud when it goes off-screen
+          newX = C.GAME_WIDTH;
+          return {
+            ...cloud,
+            x: newX,
+            y: C.CLOUD_Y_MIN + Math.random() * (C.CLOUD_Y_MAX - C.CLOUD_Y_MIN),
+            size: C.CLOUD_MIN_SIZE + Math.random() * (C.CLOUD_MAX_SIZE - C.CLOUD_MIN_SIZE),
+          };
+        }
+        return { ...cloud, x: newX };
+      }));
+    }
+
+    if (gameState !== GameState.Playing) {
+      gameLoopRef.current = requestAnimationFrame(gameLoop);
+      return;
+    }
 
     if (deltaTime > 0 && gameStarted) {
       const newVelocity = playerVelocityY + C.GRAVITY * deltaTime;
@@ -439,7 +512,8 @@ const App: React.FC = () => {
   }, [gameState, obstacles, playerPositionY, playerVelocityY, gameStarted]);
 
   useEffect(() => {
-    if (gameState === GameState.Playing) {
+    // This effect starts/stops the animation frame loop
+    if (gameState !== GameState.GameOver) { // Keep clouds moving on menus
       lastFrameTimeRef.current = performance.now();
       gameLoopRef.current = requestAnimationFrame(gameLoop);
     }
@@ -522,74 +596,88 @@ const App: React.FC = () => {
 
 
   return (
-    <GameScreen>
-      <div className="absolute top-4 right-4 bg-white/50 px-4 py-2 rounded-lg text-gray-700 font-bold text-2xl z-20">
-        Score: {score}
-      </div>
+    <div className="flex justify-center items-center w-screen h-screen bg-black font-sans">
+      <div
+        className="relative overflow-hidden rounded-2xl shadow-2xl sky-background"
+        style={{
+          width: C.GAME_WIDTH,
+          height: C.GAME_HEIGHT,
+          transform: `scale(${scale})`,
+          transformOrigin: 'center center',
+        }}
+      >
+        {clouds.map(cloud => (
+            <CloudComponent key={cloud.id} cloud={cloud} />
+        ))}
+       
+        <div className="absolute top-4 right-4 bg-white/50 px-4 py-2 rounded-lg text-gray-700 font-bold text-2xl z-20">
+          Score: {score}
+        </div>
 
-      {gameState === GameState.PreGame && !showHallOfPay && !showSettings && (
-        <Overlay>
-            <h1 className="text-4xl font-bold text-teal-600 mb-2">Pastel Jump</h1>
-            <p className="text-gray-600 mb-6">Collect gold, figure out others</p>
-            <div className="flex flex-col space-y-4 w-full">
+        {gameState === GameState.PreGame && !showHallOfPay && !showOther && (
+          <Overlay>
+              <h1 className="text-4xl font-bold text-teal-600 mb-2">Pastel Jump</h1>
+              <p className="text-gray-600 mb-6">Collect gold, figure out others</p>
+              <div className="flex flex-col space-y-4 w-full">
+                  <button
+                      onClick={resetGame}
+                      className="px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
+                  >
+                      Press Space to Start
+                  </button>
+                  <button
+                      onClick={() => setShowHallOfPay(true)}
+                      className="px-8 py-3 bg-teal-500 text-white font-bold rounded-lg shadow-md hover:bg-teal-600 transition-colors"
+                  >
+                      Hall of Pay
+                  </button>
+                   <button
+                      onClick={() => setShowOther(true)}
+                      className="px-8 py-3 bg-blue-500 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors"
+                  >
+                      Other
+                  </button>
+              </div>
+          </Overlay>
+        )}
+
+        {showHallOfPay && <HallOfPay onClose={() => setShowHallOfPay(false)} />}
+        {showOther && <Other onClose={() => setShowOther(false)} difficulty={difficulty} onDifficultyChange={setDifficulty} />}
+
+
+        {gameState === GameState.GameOver && (
+          <Overlay>
+              <h2 className="text-3xl font-bold text-red-500 mb-2">{getGameOverMessage(score, gameOverReason)}</h2>
+              <p className="text-2xl text-gray-700 mb-6">Final Score: {score}</p>
+              <div className="flex flex-col space-y-4 w-full">
                 <button
                     onClick={resetGame}
-                    className="px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
+                    disabled={!canRestart}
+                    className={`px-8 py-3 bg-teal-500 text-white font-bold rounded-lg shadow-md hover:bg-teal-600 transition-colors ${!canRestart && 'opacity-50 cursor-not-allowed'}`}
                 >
-                    Press Space to Start
+                    Press space to play again
                 </button>
                 <button
-                    onClick={() => setShowHallOfPay(true)}
-                    className="px-8 py-3 bg-teal-500 text-white font-bold rounded-lg shadow-md hover:bg-teal-600 transition-colors"
+                    onClick={goToStartScreen}
+                    className="px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
                 >
-                    Hall of Pay
+                    Close
                 </button>
-                 <button
-                    onClick={() => setShowSettings(true)}
-                    className="px-8 py-3 bg-blue-500 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors"
-                >
-                    Settings
-                </button>
-            </div>
-        </Overlay>
-      )}
+              </div>
+          </Overlay>
+        )}
 
-      {showHallOfPay && <HallOfPay onClose={() => setShowHallOfPay(false)} />}
-      {showSettings && <Settings onClose={() => setShowSettings(false)} difficulty={difficulty} onDifficultyChange={setDifficulty} />}
-
-
-      {gameState === GameState.GameOver && (
-        <Overlay>
-            <h2 className="text-3xl font-bold text-red-500 mb-2">{getGameOverMessage(score, gameOverReason)}</h2>
-            <p className="text-2xl text-gray-700 mb-6">Final Score: {score}</p>
-            <div className="flex flex-col space-y-4 w-full">
-              <button
-                  onClick={resetGame}
-                  disabled={!canRestart}
-                  className={`px-8 py-3 bg-teal-500 text-white font-bold rounded-lg shadow-md hover:bg-teal-600 transition-colors ${!canRestart && 'opacity-50 cursor-not-allowed'}`}
-              >
-                  Press space to play again
-              </button>
-              <button
-                  onClick={goToStartScreen}
-                  className="px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
-              >
-                  Close
-              </button>
-            </div>
-        </Overlay>
-      )}
-
-      {(gameState === GameState.Playing || gameState === GameState.GameOver) && (
-        <>
-          <Player y={playerPositionY} />
-          {obstacles.map(o => (
-            <ObstacleComponent key={o.id} obstacle={o} />
-          ))}
-        </>
-      )}
-       { !gameStarted && <div className="absolute bottom-0 left-0 w-full h-5 bg-green-300"></div>}
-    </GameScreen>
+        {(gameState === GameState.Playing || gameState === GameState.GameOver) && (
+          <>
+            <Player y={playerPositionY} />
+            {obstacles.map(o => (
+              <ObstacleComponent key={o.id} obstacle={o} />
+            ))}
+          </>
+        )}
+         <div className="absolute bottom-0 left-0 w-full h-5 bg-green-300" style={{zIndex: 4}}></div>
+      </div>
+    </div>
   );
 };
 

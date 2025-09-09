@@ -3,7 +3,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Pastel Jump</title>
     <script src="https://cdn.tailwindcss.com"></script>
   <script type="importmap">
@@ -15,8 +15,68 @@
   }
 }
 </script>
+<style>
+      /* Ensure full viewport usage and prevent scrolling */
+      html, body, #root {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      /* Orientation Lock for mobile */
+      #orientation-blocker {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background-color: #eff6ff; /* bg-blue-50 */
+        color: #0369a1; /* text-cyan-700 */
+        z-index: 9999;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        font-family: sans-serif;
+        padding: 2rem;
+      }
+      /* Using max-height is a common way to target mobile-like devices in landscape */
+      @media screen and (max-height: 500px) and (orientation: landscape) {
+        #root {
+          display: none;
+        }
+        #orientation-blocker {
+          display: flex;
+        }
+      }
+      /* Bouncing animation for the player ball */
+      @keyframes bounce {
+        0%, 100% {
+          transform: translateY(-25%);
+          animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+        }
+        50% {
+          transform: translateY(0);
+          animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+        }
+      }
+      .bouncing-ball {
+        animation: bounce 1s infinite;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+      /* Sky Background */
+      .sky-background {
+        background: linear-gradient(to bottom, #87CEEB 0%, #B0E0E6 100%);
+        position: relative;
+        overflow: hidden;
+      }
+    </style>
 </head>
-  <body class="bg-gray-100">
+  <body class="bg-black">
+    <div id="orientation-blocker">
+      <div class="w-16 h-16 mb-4 bg-pink-400 rounded-full bouncing-ball"></div>
+      <h2 class="text-2xl font-bold">Please rotate your device</h2>
+      <p class="text-lg mt-2">This game is best played in portrait mode.</p>
+    </div>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

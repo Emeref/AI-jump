@@ -1,3 +1,4 @@
+
 // Game Dimensions
 export const GAME_WIDTH = 400;
 export const GAME_HEIGHT = 800;
@@ -33,7 +34,7 @@ export const OBSTACLE_RED_SPAWN_Y_MAX_PERCENT = 1.0; // 100% from the top
 
 
 // Speeds are in seconds to cross the full game width
-const OBSTACLE_NORMAL_SPEED_SECONDS_MIN = 1;
+const OBSTACLE_NORMAL_SPEED_SECONDS_MIN = 1.5;
 const OBSTACLE_NORMAL_SPEED_SECONDS_MAX = 3;
 const OBSTACLE_GOLD_SPEED_SECONDS_MIN = 5;
 const OBSTACLE_GOLD_SPEED_SECONDS_MAX = 7;
@@ -76,3 +77,18 @@ export const RED_OBSTACLE_MIN_SCORE_TO_APPEAR = 1024; // Appears after 1024 poin
 // Audio
 // A simple, short 'boop' sound for jumping
 export const JUMP_SOUND_BASE64 = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQggAAAAg/9/f3+A';
+
+// Links
+export const DONATE_LINK = 'https://buymeacoffee.com/example';
+
+// Cloud Properties
+export const CLOUD_COUNT = 6;
+export const CLOUD_MIN_SIZE = 60;
+export const CLOUD_MAX_SIZE = 120;
+export const CLOUD_Y_MIN = 20;
+export const CLOUD_Y_MAX = 300;
+// Speeds in pixels per second
+export const CLOUD_SPEED_MIN = 10;
+export const CLOUD_SPEED_MAX = 25;
+export const CLOUD_OPACITY_MIN = 0.4;
+export const CLOUD_OPACITY_MAX = 0.8;

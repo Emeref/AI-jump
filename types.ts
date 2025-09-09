@@ -13,3 +13,12 @@ export type Obstacle = {
   speed: number;
   type: 'normal' | 'gold' | 'blue' | 'red';
 };
+
+export type Cloud = {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  speed: number;
+  opacity: number;
+};
