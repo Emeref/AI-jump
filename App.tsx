@@ -158,9 +158,28 @@ const Other: React.FC<{
   onClose: () => void;
   difficulty: number;
   onDifficultyChange: (newDifficulty: number) => void;
-}> = ({ onClose, difficulty, onDifficultyChange }) => {
+  highScores: number[];
+}> = ({ onClose, difficulty, onDifficultyChange, highScores }) => {
+  const scrollbarStyles = `
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #f0f0f0;
+    }
+  `;
   return (
     <Overlay>
+      <style>{scrollbarStyles}</style>
       <div className="relative w-full">
         <h2 className="text-3xl font-bold text-teal-600 mb-6">Other</h2>
         <div className="bg-white/50 p-6 rounded-lg space-y-6">
@@ -177,6 +196,27 @@ const Other: React.FC<{
               onChange={(e) => onDifficultyChange(parseInt(e.target.value, 10))}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
             />
+          </div>
+          <div>
+            <h3 className="text-gray-700 font-bold mb-2 text-center">Personal Bests</h3>
+            <div className="bg-white/50 p-2 rounded-lg max-h-[150px] overflow-y-auto custom-scrollbar">
+              <table className="w-full text-sm text-left">
+                <thead className="sticky top-0 bg-white/70 backdrop-blur-sm">
+                  <tr className="border-b-2 border-gray-300">
+                    <th className="p-2 font-bold text-gray-700 text-center">Difficulty</th>
+                    <th className="p-2 font-bold text-gray-700 text-center">High Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {highScores.map((score, index) => (
+                    <tr key={index} className="border-b border-gray-200 last:border-b-0">
+                      <td className="p-2 font-mono text-center text-black">{index + 1}</td>
+                      <td className="p-2 font-mono text-center text-black">{score}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
           <div>
             <a
@@ -218,6 +258,20 @@ const App: React.FC = () => {
   const [showOther, setShowOther] = useState(false);
   const [difficulty, setDifficulty] = useState(3);
   const [scale, setScale] = useState(1);
+  const [highScores, setHighScores] = useState<number[]>(() => {
+    try {
+        const savedScores = localStorage.getItem('pastelJumpHighScores');
+        if (savedScores) {
+            const parsed = JSON.parse(savedScores);
+            if (Array.isArray(parsed) && parsed.length === 10 && parsed.every(item => typeof item === 'number')) {
+                return parsed;
+            }
+        }
+    } catch (error) {
+        console.error("Failed to load high scores:", error);
+    }
+    return Array(10).fill(0);
+  });
 
 
   const jumpSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -530,16 +584,28 @@ const App: React.FC = () => {
     };
   }, [gameState, gameLoop]);
   
-  // Effect for handling the restart delay
+  // Effect for handling the restart delay and saving scores
   useEffect(() => {
       if (gameState === GameState.GameOver) {
-          setCanRestart(false);
           const timer = setTimeout(() => {
               setCanRestart(true);
           }, 1000);
+
+          const difficultyIndex = difficulty - 1;
+          if (score > highScores[difficultyIndex]) {
+              const newHighScores = [...highScores];
+              newHighScores[difficultyIndex] = score;
+              setHighScores(newHighScores);
+              try {
+                  localStorage.setItem('pastelJumpHighScores', JSON.stringify(newHighScores));
+              } catch (error) {
+                  console.error("Failed to save high scores:", error);
+              }
+          }
+          
           return () => clearTimeout(timer);
       }
-  }, [gameState]);
+  }, [gameState, score, difficulty, highScores]);
 
   useEffect(() => {
     if (gameState === GameState.Playing) {
@@ -648,7 +714,7 @@ const App: React.FC = () => {
         )}
 
         {showHallOfPay && <HallOfPay onClose={() => setShowHallOfPay(false)} />}
-        {showOther && <Other onClose={() => setShowOther(false)} difficulty={difficulty} onDifficultyChange={setDifficulty} />}
+        {showOther && <Other onClose={() => setShowOther(false)} difficulty={difficulty} onDifficultyChange={setDifficulty} highScores={highScores} />}
 
 
         {gameState === GameState.GameOver && (
