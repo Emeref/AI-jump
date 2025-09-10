@@ -99,10 +99,6 @@ export const RED_OBSTACLE_MIN_SCORE_TO_APPEAR = 1024; // Appears after 1024 poin
 export const GREEN_OBSTACLE_SPAWN_CHANCE = 0.05; // 5% chance
 export const GREEN_OBSTACLE_MIN_SCORE_to_APPEAR = 128; // Appears after 128 points
 
-// Audio
-// A simple, short 'boop' sound for jumping
-export const JUMP_SOUND_BASE64 = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQggAAAAg/9/f3+A';
-
 // Links
 export const DONATE_LINK = 'https://buymeacoffee.com/example';
 

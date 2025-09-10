@@ -257,7 +257,11 @@ const TreeComponent: React.FC<{ offset: number }> = ({ offset }) => {
 
 const Overlay: React.FC<{ children: React.ReactNode; zIndex?: number }> = ({ children, zIndex = 30 }) => (
     <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center text-center p-4" style={{ zIndex }}>
-        <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg w-full max-w-sm">
+        <div
+            className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg w-full max-w-sm"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+        >
             {children}
         </div>
     </div>
@@ -537,7 +541,6 @@ const App: React.FC = () => {
   });
 
 
-  const jumpSoundRef = useRef<HTMLAudioElement | null>(null);
   const gameLoopRef = useRef<number | null>(null);
   const obstacleSpawnersRef = useRef<number[]>([]);
   const lastFrameTimeRef = useRef(0);
@@ -562,7 +565,6 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    jumpSoundRef.current = new Audio(C.JUMP_SOUND_BASE64);
     setClouds(Array.from({ length: C.CLOUD_COUNT }, createRandomCloud));
   }, []);
   
@@ -618,10 +620,6 @@ const App: React.FC = () => {
         setGameStarted(true);
         setSceneryOffset(C.GAME_HEIGHT * 0.05);
       }
-      if(jumpSoundRef.current) {
-        jumpSoundRef.current.currentTime = 0;
-        jumpSoundRef.current.play();
-      }
       
       const heightFromGround = C.PLAYER_GROUND_Y - playerPositionY;
       const totalClimbableHeight = C.PLAYER_GROUND_Y;
@@ -635,20 +633,24 @@ const App: React.FC = () => {
     }
   }, [gameState, gameStarted, playerPositionY]);
 
+  const handleUserAction = useCallback(() => {
+    if (gameState === GameState.PreGame || (gameState === GameState.GameOver && canRestart)) {
+      resetGame();
+    } else if (gameState === GameState.Playing) {
+      handleJump();
+    }
+  }, [gameState, canRestart, resetGame, handleJump]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        if (gameState === GameState.PreGame || (gameState === GameState.GameOver && canRestart)) {
-          resetGame();
-        } else if (gameState === GameState.Playing) {
-          handleJump();
-        }
+        handleUserAction();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState, handleJump, resetGame, canRestart]);
+  }, [handleUserAction]);
 
 
   const spawnObstacle = useCallback(() => {
@@ -983,7 +985,17 @@ const App: React.FC = () => {
           height: C.GAME_HEIGHT,
           transform: `scale(${scale})`,
           transformOrigin: 'center center',
+          cursor: 'pointer',
         }}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          handleUserAction();
+        }}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          handleUserAction();
+        }}
+        onContextMenu={(e) => e.preventDefault()}
       >
         {clouds.map(cloud => (
             <CloudComponent key={cloud.id} cloud={cloud} />
@@ -1005,7 +1017,7 @@ const App: React.FC = () => {
                       onClick={resetGame}
                       className="px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
                   >
-                      Press Space to Start
+                      Press to Start
                   </button>
                   <button
                       onClick={() => setShowHallOfPay(true)}
@@ -1039,7 +1051,7 @@ const App: React.FC = () => {
                     disabled={!canRestart}
                     className={`px-8 py-3 bg-teal-500 text-white font-bold rounded-lg shadow-md hover:bg-teal-600 transition-colors ${!canRestart && 'opacity-50 cursor-not-allowed'}`}
                 >
-                    Press space to play again
+                    Press to play again
                 </button>
                 <button
                     onClick={goToStartScreen}
