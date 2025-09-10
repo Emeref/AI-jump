@@ -41,7 +41,7 @@ const ObstacleComponent: React.FC<{ obstacle: Obstacle }> = ({ obstacle }) => {
 
     return (
       <div
-        className={`absolute rounded-lg ${bgColor}`}
+        className={`absolute rounded-full ${bgColor}`}
         style={style}
       />
     );
@@ -188,7 +188,7 @@ const Other: React.FC<{
               Donate
             </a>
             <p className="text-gray-500 text-xs mt-2 italic text-center">
-              If you donation will be big enough you will get to the 'Hall of Pay'.
+              If you donation will be bigger than lowest not taken spot then you will get that spot in the 'Hall of Pay'. 
             </p>
           </div>
         </div>
@@ -457,17 +457,23 @@ const App: React.FC = () => {
     let endReason: typeof gameOverReason = 'score';
 
     for (const obstacle of movedObstacles) {
-        const playerLeft = C.PLAYER_X_POSITION;
-        const playerRight = C.PLAYER_X_POSITION + C.PLAYER_SIZE;
-        const playerTop = playerPositionY;
-        const playerBottom = playerPositionY + C.PLAYER_SIZE;
+        const playerRadius = C.PLAYER_SIZE / 2;
+        const obstacleRadius = C.OBSTACLE_SIZE / 2;
         
-        const obstacleLeft = obstacle.x;
-        const obstacleRight = obstacle.x + C.OBSTACLE_SIZE;
-        const obstacleTop = obstacle.y;
-        const obstacleBottom = obstacle.y + C.OBSTACLE_SIZE;
+        const playerCenterX = C.PLAYER_X_POSITION + playerRadius;
+        const playerCenterY = playerPositionY + playerRadius;
 
-        if (playerRight > obstacleLeft && playerLeft < obstacleRight && playerBottom > obstacleTop && playerTop < obstacleBottom) {
+        const obstacleCenterX = obstacle.x + obstacleRadius;
+        const obstacleCenterY = obstacle.y + obstacleRadius;
+        
+        const dx = playerCenterX - obstacleCenterX;
+        const dy = playerCenterY - obstacleCenterY;
+        const distanceSquared = dx * dx + dy * dy;
+        
+        const radiiSum = playerRadius + obstacleRadius;
+        const radiiSumSquared = radiiSum * radiiSum;
+
+        if (distanceSquared < radiiSumSquared) {
              if (obstacle.type === 'normal' || obstacle.type === 'blue') {
                 shouldEndGame = true;
              }
@@ -675,7 +681,9 @@ const App: React.FC = () => {
             ))}
           </>
         )}
-         <div className="absolute bottom-0 left-0 w-full h-5 bg-green-300" style={{zIndex: 4}}></div>
+         {gameState === GameState.Playing && !gameStarted && (
+            <div className="absolute bottom-0 left-0 w-full h-5 bg-green-300" style={{zIndex: 4}}></div>
+         )}
       </div>
     </div>
   );
