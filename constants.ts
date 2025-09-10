@@ -1,4 +1,5 @@
 
+
 // Game Dimensions
 export const GAME_WIDTH = 400;
 export const GAME_HEIGHT = 800;
@@ -24,6 +25,10 @@ export const OBSTACLE_NORMAL_SPAWN_Y_MAX_PERCENT = 1.0; // 100% from the top
 export const OBSTACLE_GOLD_SPAWN_Y_MIN_PERCENT = 0.15; // 25% from the top
 export const OBSTACLE_GOLD_SPAWN_Y_MAX_PERCENT = 0.35; // 75% from the top
 
+// Vertical spawn range for GLOWING GOLD obstacles (0.0 = top, 1.0 = bottom)
+export const OBSTACLE_GLOWING_GOLD_SPAWN_Y_MIN_PERCENT = 0.75; // 75% from the top
+export const OBSTACLE_GLOWING_GOLD_SPAWN_Y_MAX_PERCENT = 0.9; // 100% from the top
+
 // Vertical spawn range for BLUE obstacles (0.0 = top, 1.0 = bottom)
 export const OBSTACLE_BLUE_SPAWN_Y_MIN_PERCENT = 0.1; // 0% from the top
 export const OBSTACLE_BLUE_SPAWN_Y_MAX_PERCENT = 0.2; // 100% from the top
@@ -31,6 +36,10 @@ export const OBSTACLE_BLUE_SPAWN_Y_MAX_PERCENT = 0.2; // 100% from the top
 // Vertical spawn range for RED obstacles (0.0 = top, 1.0 = bottom)
 export const OBSTACLE_RED_SPAWN_Y_MIN_PERCENT = 0.0; // 0% from the top
 export const OBSTACLE_RED_SPAWN_Y_MAX_PERCENT = 1.0; // 100% from the top
+
+// Vertical spawn range for GREEN obstacles (0.0 = top, 1.0 = bottom)
+export const OBSTACLE_GREEN_SPAWN_Y_MIN_PERCENT = 0.0; // 0% from the top
+export const OBSTACLE_GREEN_SPAWN_Y_MAX_PERCENT = 0.5; // 50% from the top
 
 
 // Speeds are in seconds to cross the full game width
@@ -42,16 +51,22 @@ const OBSTACLE_BLUE_SPEED_SECONDS_MIN = 6;
 const OBSTACLE_BLUE_SPEED_SECONDS_MAX = 8;
 const OBSTACLE_RED_SPEED_SECONDS_MIN = 6;
 const OBSTACLE_RED_SPEED_SECONDS_MAX = 8;
+const OBSTACLE_GREEN_SPEED_SECONDS_MIN = 1;
+const OBSTACLE_GREEN_SPEED_SECONDS_MAX = 2.5;
 
 // Converted speeds to pixels per second
 export const OBSTACLE_NORMAL_SPEED_MIN = GAME_WIDTH / OBSTACLE_NORMAL_SPEED_SECONDS_MAX;
 export const OBSTACLE_NORMAL_SPEED_MAX = GAME_WIDTH / OBSTACLE_NORMAL_SPEED_SECONDS_MIN;
 export const OBSTACLE_GOLD_SPEED_MIN = GAME_WIDTH / OBSTACLE_GOLD_SPEED_SECONDS_MAX;
 export const OBSTACLE_GOLD_SPEED_MAX = GAME_WIDTH / OBSTACLE_GOLD_SPEED_SECONDS_MIN;
+export const OBSTACLE_GLOWING_GOLD_SPEED_MIN = OBSTACLE_GOLD_SPEED_MIN * 2;
+export const OBSTACLE_GLOWING_GOLD_SPEED_MAX = OBSTACLE_GOLD_SPEED_MAX * 2;
 export const OBSTACLE_BLUE_SPEED_MIN = GAME_WIDTH / OBSTACLE_BLUE_SPEED_SECONDS_MAX;
 export const OBSTACLE_BLUE_SPEED_MAX = GAME_WIDTH / OBSTACLE_BLUE_SPEED_SECONDS_MIN;
 export const OBSTACLE_RED_SPEED_MIN = GAME_WIDTH / OBSTACLE_RED_SPEED_SECONDS_MAX;
 export const OBSTACLE_RED_SPEED_MAX = GAME_WIDTH / OBSTACLE_RED_SPEED_SECONDS_MIN;
+export const OBSTACLE_GREEN_SPEED_MIN = GAME_WIDTH / OBSTACLE_GREEN_SPEED_SECONDS_MAX;
+export const OBSTACLE_GREEN_SPEED_MAX = GAME_WIDTH / OBSTACLE_GREEN_SPEED_SECONDS_MIN;
 
 
 // Gameplay Mechanics
@@ -60,11 +75,16 @@ export const OBSTACLE_SPAWN_INTERVAL_PER_LINE_MAX = 1500; // in ms
 
 // Points
 export const OBSTACLE_GOLD_POINTS = 64;
+export const OBSTACLE_GLOWING_GOLD_POINTS = 256;
 export const OBSTACLE_BLUE_POINTS = -1000; // Touch = game over
 export const OBSTACLE_RED_POINTS = -50; 
 
 // Chance of an obstacle being gold (0.0 = 0%, 1.0 = 100%)
 export const GOLD_OBSTACLE_SPAWN_CHANCE = 0.05; // 5% chance
+
+// Chance of an obstacle being glowing gold (0.0 = 0%, 1.0 = 100%)
+export const GLOWING_GOLD_OBSTACLE_SPAWN_CHANCE = 0.04; // 4% chance
+export const GLOWING_GOLD_OBSTACLE_MIN_SCORE_TO_APPEAR = 768; // Appears after 768 points
 
 // Chance of an obstacle being blue (0.0 = 0%, 1.0 = 100%) - only after min score is reached
 export const BLUE_OBSTACLE_SPAWN_CHANCE = 0.01; // 1% chance
@@ -73,6 +93,10 @@ export const BLUE_OBSTACLE_MIN_SCORE_TO_APPEAR = 512; // Appears after 512 point
 // Chance of an obstacle being red (0.0 = 0%, 1.0 = 100%) - only after min score is reached
 export const RED_OBSTACLE_SPAWN_CHANCE = 0.05; // 5% chance
 export const RED_OBSTACLE_MIN_SCORE_TO_APPEAR = 1024; // Appears after 1024 points
+
+// Chance of an obstacle being green (0.0 = 0%, 1.0 = 100%) - only after min score is reached
+export const GREEN_OBSTACLE_SPAWN_CHANCE = 0.05; // 5% chance
+export const GREEN_OBSTACLE_MIN_SCORE_to_APPEAR = 128; // Appears after 128 points
 
 // Audio
 // A simple, short 'boop' sound for jumping

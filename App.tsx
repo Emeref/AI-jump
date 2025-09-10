@@ -1,7 +1,14 @@
 
+
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GameState, Obstacle, Cloud } from './types';
 import * as C from './constants';
+
+type HighScore = {
+  score: number;
+  height: number;
+};
 
 const Player: React.FC<{ y: number }> = ({ y }) => (
   <div
@@ -30,12 +37,18 @@ const ObstacleComponent: React.FC<{ obstacle: Obstacle }> = ({ obstacle }) => {
 
     if (obstacle.type === 'gold') {
         bgColor = 'bg-yellow-400';
+    } else if (obstacle.type === 'gold-glowing') {
+        bgColor = 'bg-yellow-400';
+        style.boxShadow = '0 0 10px 2px rgba(250, 204, 21, 0.7)'; // Yellow glow effect
     } else if (obstacle.type === 'blue') {
         bgColor = 'bg-blue-500';
         style.boxShadow = '0 0 10px 2px rgba(59, 130, 246, 0.7)'; // Glow effect
     } else if (obstacle.type === 'red') {
         bgColor = 'bg-red-500';
         style.boxShadow = '0 0 10px 2px rgba(239, 68, 68, 0.7)'; // Red glow effect
+    } else if (obstacle.type === 'green') {
+        bgColor = 'bg-green-500';
+        style.boxShadow = '0 0 10px 2px rgba(34, 197, 94, 0.7)'; // Green glow effect
     }
 
 
@@ -60,6 +73,95 @@ const CloudComponent: React.FC<{ cloud: Cloud }> = ({ cloud }) => (
     }}
   />
 );
+
+const BushComponent: React.FC<{ offset: number }> = ({ offset }) => {
+  const BUSH_HEIGHT = C.GAME_HEIGHT * 0.15;
+  const BUSH_WIDTH = BUSH_HEIGHT * 1.5;
+  const LEAF_SIZE = BUSH_HEIGHT * 0.7;
+
+  return (
+    <div
+      className="absolute left-5"
+      style={{
+        width: BUSH_WIDTH,
+        height: BUSH_HEIGHT,
+        zIndex: 2,
+        bottom: `calc(0px - ${offset}px)`,
+        transition: 'bottom 0.4s ease-out',
+      }}
+    >
+      <div
+        className="absolute bg-green-400 rounded-full"
+        style={{
+          width: LEAF_SIZE,
+          height: LEAF_SIZE,
+          bottom: 0,
+          left: 0,
+          opacity: 0.9,
+        }}
+      />
+      <div
+        className="absolute bg-green-400 rounded-full"
+        style={{
+          width: LEAF_SIZE * 1.1,
+          height: LEAF_SIZE * 1.1,
+          bottom: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          opacity: 0.9,
+        }}
+      />
+       <div
+        className="absolute bg-green-400 rounded-full"
+        style={{
+          width: LEAF_SIZE,
+          height: LEAF_SIZE,
+          bottom: 0,
+          right: 0,
+          opacity: 0.9,
+        }}
+      />
+    </div>
+  );
+};
+
+
+const TreeComponent: React.FC<{ offset: number }> = ({ offset }) => {
+    const TREE_HEIGHT = C.GAME_HEIGHT * 0.30;
+    const TRUNK_HEIGHT = TREE_HEIGHT * 0.6;
+    const TRUNK_WIDTH = TREE_HEIGHT * 0.15;
+    const LEAVES_HEIGHT = TREE_HEIGHT * 0.5;
+    const LEAVES_WIDTH = TREE_HEIGHT * 0.6;
+
+    return (
+        <div
+            className="absolute right-8"
+            style={{
+                width: LEAVES_WIDTH,
+                height: TREE_HEIGHT,
+                zIndex: 2,
+                bottom: `calc(0px - ${offset}px)`,
+                transition: 'bottom 0.4s ease-out',
+            }}
+        >
+            <div
+                className="absolute bg-yellow-800 bottom-0"
+                style={{
+                    width: TRUNK_WIDTH,
+                    height: TRUNK_HEIGHT,
+                    left: `calc(50% - ${TRUNK_WIDTH / 2}px)`,
+                }}
+            />
+             <div
+                className="absolute bg-green-500 rounded-full top-0"
+                style={{
+                    width: LEAVES_WIDTH,
+                    height: LEAVES_HEIGHT,
+                }}
+            />
+        </div>
+    )
+};
 
 const Overlay: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center text-center z-30 p-4">
@@ -158,7 +260,7 @@ const Other: React.FC<{
   onClose: () => void;
   difficulty: number;
   onDifficultyChange: (newDifficulty: number) => void;
-  highScores: number[];
+  highScores: HighScore[];
 }> = ({ onClose, difficulty, onDifficultyChange, highScores }) => {
   const scrollbarStyles = `
     .custom-scrollbar::-webkit-scrollbar {
@@ -203,18 +305,20 @@ const Other: React.FC<{
                 <table className="w-full text-sm text-left">
                   <thead>
                     <tr className="border-b-2 border-gray-300">
-                      <th className="w-1/2 p-2 font-bold text-gray-700 text-center">Difficulty</th>
-                      <th className="w-1/2 p-2 font-bold text-gray-700 text-center">High Score</th>
+                      <th className="w-1/3 p-2 font-bold text-gray-700 text-center">Difficulty</th>
+                      <th className="w-1/3 p-2 font-bold text-gray-700 text-center">High Score</th>
+                      <th className="w-1/3 p-2 font-bold text-gray-700 text-center">Max Height</th>
                     </tr>
                   </thead>
                 </table>
                 <div className="max-h-[150px] overflow-y-auto custom-scrollbar">
                   <table className="w-full text-sm text-left">
                     <tbody>
-                      {highScores.map((score, index) => (
+                      {highScores.map((scoreData, index) => (
                         <tr key={index} className="border-b border-gray-200 last:border-b-0">
-                          <td className="w-1/2 p-2 font-mono text-center text-black">{index + 1}</td>
-                          <td className="w-1/2 p-2 font-mono text-center text-black">{score}</td>
+                          <td className="w-1/3 p-2 font-mono text-center text-black">{index + 1}</td>
+                          <td className="w-1/3 p-2 font-mono text-center text-black">{scoreData.score}</td>
+                          <td className="w-1/3 p-2 font-mono text-center text-black">{Math.round(scoreData.height)}%</td>
                         </tr>
                       ))}
                     </tbody>
@@ -251,6 +355,7 @@ const Other: React.FC<{
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.PreGame);
   const [score, setScore] = useState(0);
+  const [maxHeightReached, setMaxHeightReached] = useState(0);
   const [playerPositionY, setPlayerPositionY] = useState(C.PLAYER_GROUND_Y);
   const [playerVelocityY, setPlayerVelocityY] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
@@ -262,19 +367,25 @@ const App: React.FC = () => {
   const [showOther, setShowOther] = useState(false);
   const [difficulty, setDifficulty] = useState(3);
   const [scale, setScale] = useState(1);
-  const [highScores, setHighScores] = useState<number[]>(() => {
+  const [sceneryOffset, setSceneryOffset] = useState(0);
+  const [highScores, setHighScores] = useState<HighScore[]>(() => {
     try {
         const savedScores = localStorage.getItem('pastelJumpHighScores');
         if (savedScores) {
             const parsed = JSON.parse(savedScores);
-            if (Array.isArray(parsed) && parsed.length === 10 && parsed.every(item => typeof item === 'number')) {
+            // Check for new format: {score, height}
+            if (Array.isArray(parsed) && parsed.length === 10 && parsed.every(item => typeof item === 'object' && 'score' in item && 'height' in item)) {
                 return parsed;
+            }
+             // Check for old format (number[]) and migrate
+            if (Array.isArray(parsed) && parsed.length === 10 && parsed.every(item => typeof item === 'number')) {
+                return parsed.map(score => ({ score, height: 0 }));
             }
         }
     } catch (error) {
         console.error("Failed to load high scores:", error);
     }
-    return Array(10).fill(0);
+    return Array(10).fill({ score: 0, height: 0 });
   });
 
 
@@ -323,6 +434,7 @@ const App: React.FC = () => {
 
   const resetGame = useCallback(() => {
     setScore(0);
+    setMaxHeightReached(0);
     setPlayerPositionY(C.PLAYER_GROUND_Y);
     setPlayerVelocityY(0);
     setGameStarted(false);
@@ -331,11 +443,13 @@ const App: React.FC = () => {
     setGameOverReason('score');
     setShowHallOfPay(false);
     setShowOther(false);
+    setSceneryOffset(0);
     setGameState(GameState.Playing);
   }, []);
 
   const goToStartScreen = useCallback(() => {
     setScore(0);
+    setMaxHeightReached(0);
     setPlayerPositionY(C.PLAYER_GROUND_Y);
     setPlayerVelocityY(0);
     setGameStarted(false);
@@ -344,6 +458,7 @@ const App: React.FC = () => {
     setGameOverReason('score');
     setShowHallOfPay(false);
     setShowOther(false);
+    setSceneryOffset(0);
     setGameState(GameState.PreGame);
   }, []);
 
@@ -351,6 +466,7 @@ const App: React.FC = () => {
     if (gameState === GameState.Playing) {
       if (!gameStarted) {
         setGameStarted(true);
+        setSceneryOffset(C.GAME_HEIGHT * 0.05);
       }
       if(jumpSoundRef.current) {
         jumpSoundRef.current.currentTime = 0;
@@ -395,6 +511,10 @@ const App: React.FC = () => {
       type = 'red';
     } else if (currentScore >= C.BLUE_OBSTACLE_MIN_SCORE_TO_APPEAR && Math.random() < C.BLUE_OBSTACLE_SPAWN_CHANCE) {
       type = 'blue';
+    } else if (currentScore >= C.GREEN_OBSTACLE_MIN_SCORE_to_APPEAR && Math.random() < C.GREEN_OBSTACLE_SPAWN_CHANCE) {
+      type = 'green';
+    } else if (currentScore >= C.GLOWING_GOLD_OBSTACLE_MIN_SCORE_TO_APPEAR && Math.random() < C.GLOWING_GOLD_OBSTACLE_SPAWN_CHANCE) {
+      type = 'gold-glowing';
     } else if (Math.random() < C.GOLD_OBSTACLE_SPAWN_CHANCE) {
       type = 'gold';
     } else {
@@ -409,6 +529,11 @@ const App: React.FC = () => {
         const startY = C.GAME_HEIGHT * C.OBSTACLE_GOLD_SPAWN_Y_MIN_PERCENT;
         y = startY + Math.random() * spawnRangeY;
         speed = C.OBSTACLE_GOLD_SPEED_MIN + Math.random() * (C.OBSTACLE_GOLD_SPEED_MAX - C.OBSTACLE_GOLD_SPEED_MIN);
+    } else if (type === 'gold-glowing') {
+        const spawnRangeY = C.GAME_HEIGHT * (C.OBSTACLE_GLOWING_GOLD_SPAWN_Y_MAX_PERCENT - C.OBSTACLE_GLOWING_GOLD_SPAWN_Y_MIN_PERCENT);
+        const startY = C.GAME_HEIGHT * C.OBSTACLE_GLOWING_GOLD_SPAWN_Y_MIN_PERCENT;
+        y = startY + Math.random() * spawnRangeY;
+        speed = C.OBSTACLE_GLOWING_GOLD_SPEED_MIN + Math.random() * (C.OBSTACLE_GLOWING_GOLD_SPEED_MAX - C.OBSTACLE_GLOWING_GOLD_SPEED_MIN);
     } else if (type === 'blue') {
         const spawnRangeY = C.GAME_HEIGHT * (C.OBSTACLE_BLUE_SPAWN_Y_MAX_PERCENT - C.OBSTACLE_BLUE_SPAWN_Y_MIN_PERCENT);
         const startY = C.GAME_HEIGHT * C.OBSTACLE_BLUE_SPAWN_Y_MIN_PERCENT;
@@ -419,6 +544,11 @@ const App: React.FC = () => {
         const startY = C.GAME_HEIGHT * C.OBSTACLE_RED_SPAWN_Y_MIN_PERCENT;
         y = startY + Math.random() * spawnRangeY;
         speed = C.OBSTACLE_RED_SPEED_MIN + Math.random() * (C.OBSTACLE_RED_SPEED_MAX - C.OBSTACLE_RED_SPEED_MIN);
+    } else if (type === 'green') {
+        const spawnRangeY = C.GAME_HEIGHT * (C.OBSTACLE_GREEN_SPAWN_Y_MAX_PERCENT - C.OBSTACLE_GREEN_SPAWN_Y_MIN_PERCENT);
+        const startY = C.GAME_HEIGHT * C.OBSTACLE_GREEN_SPAWN_Y_MIN_PERCENT;
+        y = startY + Math.random() * spawnRangeY;
+        speed = C.OBSTACLE_GREEN_SPEED_MIN + Math.random() * (C.OBSTACLE_GREEN_SPEED_MAX - C.OBSTACLE_GREEN_SPEED_MIN);
     } else { // normal
         const spawnRangeY = C.GAME_HEIGHT * (C.OBSTACLE_NORMAL_SPAWN_Y_MAX_PERCENT - C.OBSTACLE_NORMAL_SPAWN_Y_MIN_PERCENT);
         const startY = C.GAME_HEIGHT * C.OBSTACLE_NORMAL_SPAWN_Y_MIN_PERCENT;
@@ -476,6 +606,10 @@ const App: React.FC = () => {
       setPlayerVelocityY(newVelocity);
       setPlayerPositionY(newPosition);
 
+      // Track max height
+      const currentHeightPercent = Math.max(0, ((C.PLAYER_GROUND_Y - newPosition) / C.PLAYER_GROUND_Y) * 100);
+      setMaxHeightReached(prevMax => Math.max(prevMax, currentHeightPercent));
+
       if (newPosition >= C.BOTTOM_BOUNDARY - C.PLAYER_SIZE) {
         setGameState(GameState.GameOver);
         return;
@@ -513,6 +647,7 @@ const App: React.FC = () => {
     const collidedObstacleIds = new Set<number>();
     let shouldEndGame = false;
     let endReason: typeof gameOverReason = 'score';
+    let greenCollisions = 0;
 
     for (const obstacle of movedObstacles) {
         const playerRadius = C.PLAYER_SIZE / 2;
@@ -547,14 +682,23 @@ const App: React.FC = () => {
              if (!collidedObstacleIds.has(obstacle.id)) {
                 if (obstacle.type === 'gold') {
                     scoreChange += C.OBSTACLE_GOLD_POINTS;
+                } else if (obstacle.type === 'gold-glowing') {
+                    scoreChange += C.OBSTACLE_GLOWING_GOLD_POINTS;
                 } else if (obstacle.type === 'red') {
                     scoreChange += C.OBSTACLE_RED_POINTS;
                 } else if (obstacle.type === 'blue') {
                     scoreChange += C.OBSTACLE_BLUE_POINTS;
+                } else if (obstacle.type === 'green') {
+                    greenCollisions++;
                 }
                 collidedObstacleIds.add(obstacle.id);
              }
         }
+    }
+
+    if (greenCollisions > 0) {
+        const pushDown = C.GAME_HEIGHT * 0.25 * greenCollisions;
+        setPlayerPositionY(prevY => Math.min(prevY + pushDown, C.BOTTOM_BOUNDARY - C.PLAYER_SIZE));
     }
     
     if (shouldEndGame) {
@@ -590,26 +734,34 @@ const App: React.FC = () => {
   
   // Effect for handling the restart delay and saving scores
   useEffect(() => {
-      if (gameState === GameState.GameOver) {
-          const timer = setTimeout(() => {
-              setCanRestart(true);
-          }, 1000);
+    if (gameState === GameState.GameOver) {
+        const timer = setTimeout(() => {
+            setCanRestart(true);
+        }, 1000);
 
-          const difficultyIndex = difficulty - 1;
-          if (score > highScores[difficultyIndex]) {
-              const newHighScores = [...highScores];
-              newHighScores[difficultyIndex] = score;
-              setHighScores(newHighScores);
-              try {
-                  localStorage.setItem('pastelJumpHighScores', JSON.stringify(newHighScores));
-              } catch (error) {
-                  console.error("Failed to save high scores:", error);
-              }
-          }
-          
-          return () => clearTimeout(timer);
-      }
-  }, [gameState, score, difficulty, highScores]);
+        const difficultyIndex = difficulty - 1;
+        const currentBest = highScores[difficultyIndex];
+        
+        const isNewHighScore = score > currentBest.score;
+        const isNewMaxHeight = maxHeightReached > currentBest.height;
+
+        if (isNewHighScore || isNewMaxHeight) {
+            const newHighScores = [...highScores];
+            newHighScores[difficultyIndex] = {
+                score: isNewHighScore ? score : currentBest.score,
+                height: isNewMaxHeight ? maxHeightReached : currentBest.height,
+            };
+            setHighScores(newHighScores);
+            try {
+                localStorage.setItem('pastelJumpHighScores', JSON.stringify(newHighScores));
+            } catch (error) {
+                console.error("Failed to save high scores:", error);
+            }
+        }
+        
+        return () => clearTimeout(timer);
+    }
+  }, [gameState, score, difficulty, highScores, maxHeightReached]);
 
   useEffect(() => {
     if (gameState === GameState.Playing) {
@@ -685,6 +837,8 @@ const App: React.FC = () => {
         {clouds.map(cloud => (
             <CloudComponent key={cloud.id} cloud={cloud} />
         ))}
+        <BushComponent offset={sceneryOffset} />
+        <TreeComponent offset={sceneryOffset} />
        
         <div className="absolute top-4 right-4 bg-white/50 px-4 py-2 rounded-lg text-gray-700 font-bold text-2xl z-20">
           Score: {score}
@@ -724,7 +878,8 @@ const App: React.FC = () => {
         {gameState === GameState.GameOver && (
           <Overlay>
               <h2 className="text-3xl font-bold text-red-500 mb-2">{getGameOverMessage(score, gameOverReason)}</h2>
-              <p className="text-2xl text-gray-700 mb-6">Final Score: {score}</p>
+              <p className="text-2xl text-gray-700 mb-2">Final Score: {score}</p>
+              <p className="text-xl text-gray-600 mb-6">Height reached: {Math.round(maxHeightReached)}%</p>
               <div className="flex flex-col space-y-4 w-full">
                 <button
                     onClick={resetGame}

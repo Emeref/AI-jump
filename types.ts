@@ -11,7 +11,7 @@ export type Obstacle = {
   y: number;
   direction: 'left' | 'right';
   speed: number;
-  type: 'normal' | 'gold' | 'blue' | 'red';
+  type: 'normal' | 'gold' | 'gold-glowing' | 'blue' | 'red' | 'green';
 };
 
 export type Cloud = {
