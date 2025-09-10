@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GameState, Obstacle, Cloud } from './types';
 import * as C from './constants';
@@ -74,6 +73,99 @@ const CloudComponent: React.FC<{ cloud: Cloud }> = ({ cloud }) => (
   />
 );
 
+const MountainsComponent: React.FC = () => {
+    const MOUNTAINS_MAX_HEIGHT = C.GAME_HEIGHT * 0.35;
+    const roundedPeakPath = 'polygon(0% 100%, 48% 2%, 50% 0%, 52% 2%, 100% 100%)';
+
+    return (
+        <div
+            className="absolute bottom-0 left-0 w-full"
+            style={{
+                height: MOUNTAINS_MAX_HEIGHT,
+                zIndex: 2,
+            }}
+        >
+            {/* Mountain 1 - middle, tallest */}
+            <div
+                className="absolute bg-slate-500"
+                style={{
+                    width: 350,
+                    height: 280,
+                    bottom: 0,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    clipPath: roundedPeakPath,
+                }}
+            >
+                {/* Snow cap 1 */}
+                <div
+                    className="absolute bg-white"
+                    style={{
+                        width: '48%',
+                        height: '32%',
+                        top: 0,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        clipPath: roundedPeakPath,
+                    }}
+                />
+            </div>
+
+            {/* Mountain 2 - left, smaller */}
+             <div
+                className="absolute bg-slate-400"
+                style={{
+                    width: 280,
+                    height: 210,
+                    bottom: 0,
+                    left: -48,
+                    clipPath: roundedPeakPath,
+                }}
+            >
+                {/* Snow cap 2 */}
+                <div
+                    className="absolute bg-white"
+                    style={{
+                        width: '45%',
+                        height: '12%',
+                        top: 0,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        clipPath: roundedPeakPath,
+                    }}
+                />
+            </div>
+
+            {/* Mountain 3 - right, smaller */}
+            <div
+                className="absolute"
+                style={{
+                    width: 308,
+                    height: 238,
+                    bottom: 0,
+                    right: -72,
+                    backgroundColor: '#9ca9bd',
+                    clipPath: roundedPeakPath,
+                }}
+            >
+                 {/* Snow cap 3 */}
+                <div
+                    className="absolute bg-white"
+                    style={{
+                        width: '45.5%',
+                        height: '20%',
+                        top: 0,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        clipPath: roundedPeakPath,
+                    }}
+                />
+            </div>
+        </div>
+    );
+};
+
+
 const BushComponent: React.FC<{ offset: number }> = ({ offset }) => {
   const BUSH_HEIGHT = C.GAME_HEIGHT * 0.15;
   const BUSH_WIDTH = BUSH_HEIGHT * 1.5;
@@ -97,7 +189,7 @@ const BushComponent: React.FC<{ offset: number }> = ({ offset }) => {
           height: LEAF_SIZE,
           bottom: 0,
           left: 0,
-          opacity: 0.9,
+          opacity: 1,
         }}
       />
       <div
@@ -108,7 +200,7 @@ const BushComponent: React.FC<{ offset: number }> = ({ offset }) => {
           bottom: 0,
           left: '50%',
           transform: 'translateX(-50%)',
-          opacity: 0.9,
+          opacity: 1,
         }}
       />
        <div
@@ -118,7 +210,7 @@ const BushComponent: React.FC<{ offset: number }> = ({ offset }) => {
           height: LEAF_SIZE,
           bottom: 0,
           right: 0,
-          opacity: 0.9,
+          opacity: 1,
         }}
       />
     </div>
@@ -163,8 +255,8 @@ const TreeComponent: React.FC<{ offset: number }> = ({ offset }) => {
     )
 };
 
-const Overlay: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center text-center z-30 p-4">
+const Overlay: React.FC<{ children: React.ReactNode; zIndex?: number }> = ({ children, zIndex = 30 }) => (
+    <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center text-center p-4" style={{ zIndex }}>
         <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg w-full max-w-sm">
             {children}
         </div>
@@ -261,7 +353,8 @@ const Other: React.FC<{
   difficulty: number;
   onDifficultyChange: (newDifficulty: number) => void;
   highScores: HighScore[];
-}> = ({ onClose, difficulty, onDifficultyChange, highScores }) => {
+  onShowRules: () => void;
+}> = ({ onClose, difficulty, onDifficultyChange, highScores, onShowRules }) => {
   const scrollbarStyles = `
     .custom-scrollbar::-webkit-scrollbar {
       width: 10px;
@@ -326,7 +419,7 @@ const Other: React.FC<{
                 </div>
               </div>
           </div>
-          <div>
+          <div className="space-y-4">
             <a
               href={C.DONATE_LINK}
               target="_blank"
@@ -335,9 +428,15 @@ const Other: React.FC<{
             >
               Donate
             </a>
-            <p className="text-gray-500 text-xs mt-2 italic text-center">
+            <p className="text-gray-500 text-xs italic text-center">
               If you donation will be bigger than lowest not taken spot then you will get that spot in the 'Hall of Pay'. 
             </p>
+             <button
+              onClick={onShowRules}
+              className="w-full block px-8 py-3 bg-gray-400 text-white font-bold rounded-lg shadow-md hover:bg-gray-500 transition-colors"
+            >
+              Rules
+            </button>
           </div>
         </div>
         <button
@@ -349,6 +448,54 @@ const Other: React.FC<{
       </div>
     </Overlay>
   );
+};
+
+const RulesComponent: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const obstacleTypes = [
+    { color: 'bg-teal-400', name: 'Normal', effect: 'Pass to score 1 point. Touching ends the game.', appears: 'From start' },
+    { color: 'bg-yellow-400', name: 'Gold', effect: 'Collect for +64 points. Safe to touch.', appears: 'From start' },
+    { color: 'bg-yellow-400 glow', name: 'Glowing Gold', effect: 'Collect for +256 points. Spawns low, moves fast.', appears: 'Score > 768', style: { boxShadow: '0 0 10px 2px rgba(250, 204, 21, 0.7)'}},
+    { color: 'bg-green-500 glow', name: 'Green', effect: 'Teleports you 25% down. Safe to touch.', appears: 'Score > 128', style: { boxShadow: '0 0 10px 2px rgba(34, 197, 94, 0.7)'}},
+    { color: 'bg-blue-500 glow', name: 'Blue', effect: 'Touching ends the game instantly.', appears: 'Score > 512', style: { boxShadow: '0 0 10px 2px rgba(59, 130, 246, 0.7)'}},
+    { color: 'bg-red-500 glow', name: 'Red', effect: 'Touching subtracts 50 points.', appears: 'Score > 1024', style: { boxShadow: '0 0 10px 2px rgba(239, 68, 68, 0.7)'}},
+  ];
+  return (
+    <Overlay zIndex={40}>
+       <h2 className="text-3xl font-bold text-teal-600 mb-4">Game Rules</h2>
+       <div className="bg-white/50 p-4 rounded-lg space-y-4 text-left">
+          <div>
+            <h3 className="font-bold text-gray-800">How to Play</h3>
+            <ul className="list-disc list-inside text-gray-700 text-sm space-y-1 mt-1">
+                <li>Press <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">SPACE</span> to jump.</li>
+                <li>Your jump is weaker the higher you are.</li>
+                <li>Avoid teal obstacles to score points.</li>
+                <li>Survive as long as you can!</li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="font-bold text-gray-800">Obstacles</h3>
+            <div className="space-y-3 mt-2">
+              {obstacleTypes.map(o => (
+                <div key={o.name} className="flex items-center space-x-3 text-sm">
+                  <div className={`w-5 h-5 rounded-full flex-shrink-0 ${o.color}`} style={o.style || {}}></div>
+                  <div className="flex-grow">
+                    <p className="font-bold text-gray-700">{o.name}</p>
+                    <p className="text-gray-600">{o.effect}</p>
+                  </div>
+                   <div className="text-xs font-mono bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">{o.appears}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+       </div>
+       <button
+          onClick={onClose}
+          className="mt-6 px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
+        >
+          Close
+        </button>
+    </Overlay>
+  )
 };
 
 
@@ -365,6 +512,7 @@ const App: React.FC = () => {
   const [gameOverReason, setGameOverReason] = useState<'score' | 'idle' | 'blue' | 'top'>('score');
   const [showHallOfPay, setShowHallOfPay] = useState(false);
   const [showOther, setShowOther] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [difficulty, setDifficulty] = useState(3);
   const [scale, setScale] = useState(1);
   const [sceneryOffset, setSceneryOffset] = useState(0);
@@ -443,6 +591,7 @@ const App: React.FC = () => {
     setGameOverReason('score');
     setShowHallOfPay(false);
     setShowOther(false);
+    setShowRules(false);
     setSceneryOffset(0);
     setGameState(GameState.Playing);
   }, []);
@@ -458,6 +607,7 @@ const App: React.FC = () => {
     setGameOverReason('score');
     setShowHallOfPay(false);
     setShowOther(false);
+    setShowRules(false);
     setSceneryOffset(0);
     setGameState(GameState.PreGame);
   }, []);
@@ -735,6 +885,7 @@ const App: React.FC = () => {
   // Effect for handling the restart delay and saving scores
   useEffect(() => {
     if (gameState === GameState.GameOver) {
+        setSceneryOffset(0);
         const timer = setTimeout(() => {
             setCanRestart(true);
         }, 1000);
@@ -837,6 +988,7 @@ const App: React.FC = () => {
         {clouds.map(cloud => (
             <CloudComponent key={cloud.id} cloud={cloud} />
         ))}
+        <MountainsComponent />
         <BushComponent offset={sceneryOffset} />
         <TreeComponent offset={sceneryOffset} />
        
@@ -872,7 +1024,8 @@ const App: React.FC = () => {
         )}
 
         {showHallOfPay && <HallOfPay onClose={() => setShowHallOfPay(false)} />}
-        {showOther && <Other onClose={() => setShowOther(false)} difficulty={difficulty} onDifficultyChange={setDifficulty} highScores={highScores} />}
+        {showOther && <Other onClose={() => setShowOther(false)} difficulty={difficulty} onDifficultyChange={setDifficulty} highScores={highScores} onShowRules={() => setShowRules(true)}/>}
+        {showRules && <RulesComponent onClose={() => setShowRules(false)} />}
 
 
         {gameState === GameState.GameOver && (
@@ -900,14 +1053,14 @@ const App: React.FC = () => {
 
         {(gameState === GameState.Playing || gameState === GameState.GameOver) && (
           <>
-            <Player y={playerPositionY} />
+            <Player y={gameState === GameState.GameOver ? C.PLAYER_GROUND_Y : playerPositionY} />
             {obstacles.map(o => (
               <ObstacleComponent key={o.id} obstacle={o} />
             ))}
           </>
         )}
-         {gameState === GameState.Playing && !gameStarted && (
-            <div className="absolute bottom-0 left-0 w-full h-5 bg-green-300" style={{zIndex: 4}}></div>
+         {(gameState === GameState.PreGame || gameState === GameState.GameOver || (gameState === GameState.Playing && !gameStarted)) && (
+            <div className="absolute bottom-0 left-0 w-full bg-green-300" style={{height: C.GROUND_PLATFORM_HEIGHT, zIndex: 4}}></div>
          )}
       </div>
     </div>

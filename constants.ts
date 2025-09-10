@@ -7,7 +7,8 @@ export const GAME_HEIGHT = 800;
 // Player Properties
 export const PLAYER_SIZE = 30;
 export const PLAYER_X_POSITION = (GAME_WIDTH / 2) - (PLAYER_SIZE / 2);
-export const PLAYER_GROUND_Y = GAME_HEIGHT - PLAYER_SIZE - 20;
+export const GROUND_PLATFORM_HEIGHT = 24;
+export const PLAYER_GROUND_Y = GAME_HEIGHT - PLAYER_SIZE - GROUND_PLATFORM_HEIGHT;
 export const GRAVITY = 850; // pixels per second^2 - constant gravity
 export const JUMP_IMPULSE = -400; // upward velocity impulse at ground level
 export const JUMP_IMPULSE_DECAY_FACTOR = 0.8; // Impulse multiplier for every 10% of screen height
