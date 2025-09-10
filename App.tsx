@@ -199,24 +199,28 @@ const Other: React.FC<{
           </div>
           <div>
             <h3 className="text-gray-700 font-bold mb-2 text-center">Personal Bests</h3>
-            <div className="bg-white/50 p-2 rounded-lg max-h-[150px] overflow-y-auto custom-scrollbar">
-              <table className="w-full text-sm text-left">
-                <thead className="sticky top-0 bg-white/70 backdrop-blur-sm">
-                  <tr className="border-b-2 border-gray-300">
-                    <th className="p-2 font-bold text-gray-700 text-center">Difficulty</th>
-                    <th className="p-2 font-bold text-gray-700 text-center">High Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {highScores.map((score, index) => (
-                    <tr key={index} className="border-b border-gray-200 last:border-b-0">
-                      <td className="p-2 font-mono text-center text-black">{index + 1}</td>
-                      <td className="p-2 font-mono text-center text-black">{score}</td>
+             <div className="bg-white/50 rounded-lg">
+                <table className="w-full text-sm text-left">
+                  <thead>
+                    <tr className="border-b-2 border-gray-300">
+                      <th className="w-1/2 p-2 font-bold text-gray-700 text-center">Difficulty</th>
+                      <th className="w-1/2 p-2 font-bold text-gray-700 text-center">High Score</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                </table>
+                <div className="max-h-[150px] overflow-y-auto custom-scrollbar">
+                  <table className="w-full text-sm text-left">
+                    <tbody>
+                      {highScores.map((score, index) => (
+                        <tr key={index} className="border-b border-gray-200 last:border-b-0">
+                          <td className="w-1/2 p-2 font-mono text-center text-black">{index + 1}</td>
+                          <td className="w-1/2 p-2 font-mono text-center text-black">{score}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
           </div>
           <div>
             <a
