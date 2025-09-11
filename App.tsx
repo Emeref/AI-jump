@@ -1,7 +1,9 @@
 
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GameState, Obstacle, Cloud } from './types';
+
+
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { GameState, Obstacle, Cloud, BackgroundTheme } from './types';
 import * as C from './constants';
 
 type HighScore = {
@@ -69,6 +71,20 @@ const CloudComponent: React.FC<{ cloud: Cloud }> = ({ cloud }) => (
       height: cloud.size / 2, // Make clouds oval
       opacity: cloud.opacity,
       zIndex: 1, // Behind everything else
+    }}
+  />
+);
+
+const DarkCloudComponent: React.FC<{ cloud: Cloud }> = ({ cloud }) => (
+  <div
+    className="absolute bg-gray-600 rounded-full"
+    style={{
+      left: cloud.x,
+      top: cloud.y,
+      width: cloud.size,
+      height: cloud.size / 2,
+      opacity: cloud.opacity * 0.8, // Make them a bit more subtle
+      zIndex: 1,
     }}
   />
 );
@@ -255,6 +271,229 @@ const TreeComponent: React.FC<{ offset: number }> = ({ offset }) => {
     )
 };
 
+const OutdoorBackground: React.FC<{ sceneryOffset: number; clouds: Cloud[] }> = ({ sceneryOffset, clouds }) => (
+    <>
+        {clouds.map(cloud => <CloudComponent key={cloud.id} cloud={cloud} />)}
+        <MountainsComponent />
+        <BushComponent offset={sceneryOffset} />
+        <TreeComponent offset={sceneryOffset} />
+    </>
+);
+
+const MoonComponent: React.FC = () => (
+    <div
+        className="absolute bg-yellow-100 rounded-full"
+        style={{
+            width: 60,
+            height: 60,
+            top: '10%',
+            right: '15%',
+            boxShadow: '0 0 20px 10px rgba(254, 249, 195, 0.5)',
+            zIndex: 1,
+        }}
+    />
+);
+
+const CityscapeComponent: React.FC = () => (
+    <div className="absolute bottom-0 left-0 w-full h-1/2 z-1">
+        {/* Far buildings */}
+        <div className="absolute bg-gray-700 bottom-0 left-10 w-16 h-3/4" />
+        <div className="absolute bg-gray-700 bottom-0 left-32 w-20 h-1/2" />
+        <div className="absolute bg-gray-700 bottom-0 right-20 w-24 h-2/3" />
+        {/* Near buildings */}
+        <div className="absolute bg-gray-800 bottom-0 left-0 w-20 h-1/2" />
+        <div className="absolute bg-gray-800 bottom-0 left-20 w-28 h-1/3" style={{height: '60%'}}/>
+        <div className="absolute bg-gray-800 bottom-0 right-0 w-32 h-1/2" />
+        <div className="absolute bg-gray-800 bottom-0 right-40 w-16 h-full" />
+    </div>
+);
+
+const StreetlightComponent: React.FC<{ offset: number }> = ({ offset }) => (
+    <div
+        className="absolute right-12"
+        style={{ width: 10, height: 200, zIndex: 2, bottom: `calc(0px - ${offset}px)`, transition: 'bottom 0.4s ease-out' }}
+    >
+        <div className="absolute bg-gray-600 bottom-0 w-full h-full" />
+        <div className="absolute bg-yellow-300 top-0 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full" style={{boxShadow: '0 0 15px 5px rgba(253, 224, 71, 0.7)'}}/>
+    </div>
+);
+
+const ParkBenchComponent: React.FC<{ offset: number }> = ({ offset }) => (
+    <div
+        className="absolute left-10"
+        style={{ width: 80, height: 40, zIndex: 5, bottom: `calc(${C.GROUND_PLATFORM_HEIGHT}px - ${offset}px)`, transition: 'bottom 0.4s ease-out' }}
+    >
+        <div className="absolute bg-yellow-800 bottom-0 w-full h-2"/>
+        <div className="absolute bg-yellow-800 bottom-0 left-1 w-2 h-4"/>
+        <div className="absolute bg-yellow-800 bottom-0 right-1 w-2 h-4"/>
+        <div className="absolute bg-yellow-900 bottom-4 w-full h-4"/>
+    </div>
+);
+
+const CityBackground: React.FC<{ sceneryOffset: number; clouds: Cloud[] }> = ({ sceneryOffset, clouds }) => (
+    <>
+        <MoonComponent />
+        {clouds.map(cloud => <DarkCloudComponent key={cloud.id} cloud={cloud} />)}
+        <CityscapeComponent />
+        <StreetlightComponent offset={sceneryOffset} />
+        <ParkBenchComponent offset={sceneryOffset} />
+    </>
+);
+
+const CaveWindowComponent: React.FC = () => {
+    const clipPath = 'polygon(0% 20%, 25% 0%, 50% 15%, 75% 0%, 100% 25%, 90% 75%, 50% 100%, 10% 80%)';
+    return (
+        <div
+            className="absolute bg-stone-600" // A bit lighter than the darkest stalactites
+            style={{
+                top: '5%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '60%',
+                height: '25%',
+                clipPath,
+                zIndex: 1,
+                padding: '4px', // Creates the border
+            }}
+        >
+            <div
+                className="w-full h-full sky-background"
+                style={{
+                    clipPath, // Re-apply clip-path to the inner content
+                }}
+            />
+        </div>
+    );
+};
+
+const CaveFormationsComponent: React.FC = () => (
+    <>
+        {/* Stalactites */}
+        <div className="absolute bg-stone-700 top-0 left-10 w-20 h-40" style={{clipPath: 'polygon(0 0, 100% 0, 50% 100%)', zIndex: 2}} />
+        <div className="absolute bg-stone-800 top-0 right-20 w-24 h-56" style={{clipPath: 'polygon(0 0, 100% 0, 50% 100%)', zIndex: 2}} />
+        <div className="absolute bg-stone-700 top-0 left-1/2 w-16 h-32" style={{clipPath: 'polygon(0 0, 100% 0, 50% 100%)', zIndex: 2}} />
+        {/* Stalagmites */}
+        <div className="absolute bg-stone-600 bottom-0 left-20 w-24 h-16" style={{zIndex: 2, clipPath: 'polygon(50% 0, 0 100%, 100% 100%)'}}/>
+        <div className="absolute bg-stone-700 bottom-0 right-10 w-32 h-24" style={{zIndex: 2, clipPath: 'polygon(50% 0, 0 100%, 100% 100%)'}}/>
+    </>
+);
+
+const GlowingCrystalComponent: React.FC<{ offset: number, position: 'left' | 'right' }> = ({ offset, position }) => (
+    <div
+        className="absolute"
+        style={{
+            width: 50, height: 80, zIndex: 2, bottom: `calc(0px - ${offset}px)`, transition: 'bottom 0.4s ease-out',
+            left: position === 'left' ? '40px' : undefined,
+            right: position === 'right' ? '40px' : undefined,
+        }}
+    >
+        <div
+            className="absolute bg-cyan-300 w-full h-full"
+            style={{
+                clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+                boxShadow: '0 0 20px 8px rgba(34, 211, 238, 0.6)',
+                opacity: 0.8
+            }}
+        />
+    </div>
+);
+
+const BlinkingGemComponent: React.FC<{ type: 'diamond' | 'sapphire' | 'gold'; style: React.CSSProperties; isBlinking: boolean }> = ({ type, style, isBlinking }) => {
+    let gemStyle: React.CSSProperties = {};
+
+    switch (type) {
+        case 'diamond':
+            gemStyle = {
+                backgroundColor: '#e0f2fe', // light blue/white
+                clipPath: 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)',
+                boxShadow: '0 0 8px 3px rgba(173, 232, 244, 0.7)',
+            };
+            break;
+        case 'sapphire':
+            gemStyle = {
+                backgroundColor: '#60a5fa', // blue-400
+                clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                boxShadow: '0 0 10px 4px rgba(96, 165, 250, 0.6)',
+            };
+            break;
+        case 'gold':
+            gemStyle = {
+                backgroundColor: '#facc15', // yellow-400
+                borderRadius: '40% 60% 50% 50% / 60% 40% 50% 50%',
+                boxShadow: '0 0 6px 2px rgba(250, 204, 21, 0.5)',
+            };
+            break;
+    }
+
+    const combinedStyle: React.CSSProperties = {
+        ...style,
+        ...gemStyle,
+        position: 'absolute',
+        zIndex: 2,
+        opacity: 0.4, // Base style for non-blinking state
+    };
+
+    return <div style={combinedStyle} className={isBlinking ? 'blinking-gem' : ''} />;
+};
+
+
+const CaveBackground: React.FC<{ sceneryOffset: number }> = ({ sceneryOffset }) => {
+    const gems = useMemo(() => [
+        // Side gems
+        { type: 'sapphire', style: { top: '35%', left: '15px', width: 15, height: 20 } },
+        { type: 'diamond', style: { top: '45%', right: '25px', width: 12, height: 16 } },
+        { type: 'gold', style: { bottom: '30%', left: '30px', width: 18, height: 14 } },
+        { type: 'sapphire', style: { bottom: '40%', right: '10px', width: 16, height: 22 } },
+        { type: 'gold', style: { top: '28%', right: '40px', width: 20, height: 16 } },
+        // Middle gems
+        { type: 'diamond', style: { top: '55%', left: '40%', width: 14, height: 18 } },
+        { type: 'gold', style: { bottom: '20%', left: '55%', width: 16, height: 12 } },
+        { type: 'sapphire', style: { top: '65%', right: '45%', width: 15, height: 20 } },
+    ], []);
+
+    const [blinkingGemIndex, setBlinkingGemIndex] = useState<number | null>(null);
+
+    useEffect(() => {
+        let blinkTimeoutId: number;
+        let intervalTimeoutId: number;
+
+        const triggerNextBlink = () => {
+            const nextBlinkingIndex = Math.floor(Math.random() * gems.length);
+            setBlinkingGemIndex(nextBlinkingIndex);
+
+            // Turn off the blink after animation duration (500ms)
+            blinkTimeoutId = window.setTimeout(() => {
+                setBlinkingGemIndex(null);
+            }, 500); 
+
+            // Schedule the next blink after a random interval
+            const randomInterval = 500 + Math.random() * 4500; // 0.5s to 5s
+            intervalTimeoutId = window.setTimeout(triggerNextBlink, randomInterval);
+        };
+
+        // Start the first blink after an initial random delay
+        intervalTimeoutId = window.setTimeout(triggerNextBlink, 500 + Math.random() * 4500);
+
+        return () => {
+            clearTimeout(blinkTimeoutId);
+            clearTimeout(intervalTimeoutId);
+        };
+    }, [gems]);
+
+    return (
+        <>
+            <CaveWindowComponent />
+            {gems.map((gem, index) => (
+                <BlinkingGemComponent key={index} type={gem.type as any} style={gem.style} isBlinking={blinkingGemIndex === index} />
+            ))}
+            <CaveFormationsComponent />
+            <GlowingCrystalComponent offset={sceneryOffset} position="left"/>
+            <GlowingCrystalComponent offset={sceneryOffset} position="right"/>
+        </>
+    );
+};
+
+
 const Overlay: React.FC<{ children: React.ReactNode; zIndex?: number }> = ({ children, zIndex = 30 }) => (
     <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center text-center p-4" style={{ zIndex }}>
         <div
@@ -358,7 +597,8 @@ const Other: React.FC<{
   onDifficultyChange: (newDifficulty: number) => void;
   highScores: HighScore[];
   onShowRules: () => void;
-}> = ({ onClose, difficulty, onDifficultyChange, highScores, onShowRules }) => {
+  onShowBackgrounds: () => void;
+}> = ({ onClose, difficulty, onDifficultyChange, highScores, onShowRules, onShowBackgrounds }) => {
   const scrollbarStyles = `
     .custom-scrollbar::-webkit-scrollbar {
       width: 10px;
@@ -435,6 +675,12 @@ const Other: React.FC<{
             <p className="text-gray-500 text-xs italic text-center">
               If you donation will be bigger than lowest not taken spot then you will get that spot in the 'Hall of Pay'. 
             </p>
+            <button
+              onClick={onShowBackgrounds}
+              className="w-full block px-8 py-3 bg-purple-500 text-white font-bold rounded-lg shadow-md hover:bg-purple-600 transition-colors"
+            >
+              Background
+            </button>
              <button
               onClick={onShowRules}
               className="w-full block px-8 py-3 bg-gray-400 text-white font-bold rounded-lg shadow-md hover:bg-gray-500 transition-colors"
@@ -502,6 +748,44 @@ const RulesComponent: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   )
 };
 
+const BackgroundSelectionComponent: React.FC<{
+  onClose: () => void;
+  currentTheme: BackgroundTheme;
+  onSelectTheme: (theme: BackgroundTheme) => void;
+}> = ({ onClose, currentTheme, onSelectTheme }) => {
+  const themes: { id: BackgroundTheme; name: string; preview: React.ReactNode }[] = [
+    { id: 'outdoor', name: 'Outdoor', preview: <div className="w-full h-full bg-sky-300 flex items-end"><div className="w-full h-1/3 bg-green-400"/></div> },
+    { id: 'city', name: 'City', preview: <div className="w-full h-full bg-slate-700 flex items-end"><div className="w-4 h-1/2 bg-gray-500 ml-4"/><div className="w-6 h-2/3 bg-gray-500 ml-2"/></div> },
+    { id: 'cave', name: 'Cave', preview: <div className="w-full h-full bg-stone-800 flex items-end"><div className="w-4 h-1/3 bg-stone-600 ml-6" style={{clipPath: 'polygon(50% 0, 0 100%, 100% 100%)'}}/></div> },
+  ];
+
+  return (
+    <Overlay zIndex={40}>
+      <h2 className="text-3xl font-bold text-teal-600 mb-6">Choose Background</h2>
+      <div className="space-y-4 w-full">
+        {themes.map(theme => (
+          <button
+            key={theme.id}
+            onClick={() => onSelectTheme(theme.id)}
+            className={`w-full h-24 rounded-lg overflow-hidden relative border-4 transition-all ${currentTheme === theme.id ? 'border-pink-400' : 'border-transparent hover:border-pink-200'}`}
+          >
+            {theme.preview}
+            <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+              <span className="text-white text-2xl font-bold tracking-wider">{theme.name}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+      <button
+        onClick={onClose}
+        className="mt-8 px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
+      >
+        Back
+      </button>
+    </Overlay>
+  );
+};
+
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.PreGame);
@@ -517,9 +801,14 @@ const App: React.FC = () => {
   const [showHallOfPay, setShowHallOfPay] = useState(false);
   const [showOther, setShowOther] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [showBackgrounds, setShowBackgrounds] = useState(false);
   const [difficulty, setDifficulty] = useState(3);
   const [scale, setScale] = useState(1);
   const [sceneryOffset, setSceneryOffset] = useState(0);
+  const [backgroundTheme, setBackgroundTheme] = useState<BackgroundTheme>(() => {
+    const savedTheme = localStorage.getItem('pastelJumpBackground');
+    return (savedTheme === 'city' || savedTheme === 'cave') ? savedTheme : 'outdoor';
+  });
   const [highScores, setHighScores] = useState<HighScore[]>(() => {
     try {
         const savedScores = localStorage.getItem('pastelJumpHighScores');
@@ -549,6 +838,15 @@ const App: React.FC = () => {
   useEffect(() => {
     scoreRef.current = score;
   }, [score]);
+
+  const handleSelectTheme = (theme: BackgroundTheme) => {
+    setBackgroundTheme(theme);
+    try {
+      localStorage.setItem('pastelJumpBackground', theme);
+    } catch (error) {
+      console.error("Failed to save background theme:", error);
+    }
+  };
   
   const createRandomCloud = (): Cloud => {
     const size = C.CLOUD_MIN_SIZE + Math.random() * (C.CLOUD_MAX_SIZE - C.CLOUD_MIN_SIZE);
@@ -594,6 +892,7 @@ const App: React.FC = () => {
     setShowHallOfPay(false);
     setShowOther(false);
     setShowRules(false);
+    setShowBackgrounds(false);
     setSceneryOffset(0);
     setGameState(GameState.Playing);
   }, []);
@@ -610,6 +909,7 @@ const App: React.FC = () => {
     setShowHallOfPay(false);
     setShowOther(false);
     setShowRules(false);
+    setShowBackgrounds(false);
     setSceneryOffset(0);
     setGameState(GameState.PreGame);
   }, []);
@@ -728,8 +1028,8 @@ const App: React.FC = () => {
     const deltaTime = (currentTime - lastFrameTimeRef.current) / 1000;
     lastFrameTimeRef.current = currentTime;
 
-    // Move clouds
-    if (deltaTime > 0) {
+    // Move clouds for outdoor and city themes
+    if (deltaTime > 0 && (backgroundTheme === 'outdoor' || backgroundTheme === 'city')) {
       setClouds(prevClouds => prevClouds.map(cloud => {
         let newX = cloud.x - cloud.speed * deltaTime;
         if (newX < -cloud.size) {
@@ -869,20 +1169,18 @@ const App: React.FC = () => {
     
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [gameState, obstacles, playerPositionY, playerVelocityY, gameStarted]);
+  }, [gameState, obstacles, playerPositionY, playerVelocityY, gameStarted, backgroundTheme]);
 
   useEffect(() => {
     // This effect starts/stops the animation frame loop
-    if (gameState !== GameState.GameOver) { // Keep clouds moving on menus
-      lastFrameTimeRef.current = performance.now();
-      gameLoopRef.current = requestAnimationFrame(gameLoop);
-    }
+    lastFrameTimeRef.current = performance.now();
+    gameLoopRef.current = requestAnimationFrame(gameLoop);
     return () => {
       if (gameLoopRef.current) {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [gameState, gameLoop]);
+  }, [gameLoop]);
   
   // Effect for handling the restart delay and saving scores
   useEffect(() => {
@@ -975,11 +1273,37 @@ const App: React.FC = () => {
       return 'Congratulations';
   };
 
+  const getBackgroundClass = (theme: BackgroundTheme) => {
+    switch (theme) {
+      case 'city': return 'city-background';
+      case 'cave': return 'cave-background';
+      default: return 'sky-background';
+    }
+  };
 
   return (
     <div className="flex justify-center items-center w-screen h-screen bg-black font-sans">
+      <style>{`
+        @keyframes single-blink-glow {
+            0%, 100% {
+                opacity: 0.4;
+                transform: scale(1);
+                filter: brightness(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+                filter: brightness(1.5);
+            }
+        }
+        .blinking-gem {
+            animation-name: single-blink-glow;
+            animation-duration: 0.5s;
+            animation-timing-function: ease-in-out;
+        }
+      `}</style>
       <div
-        className="relative overflow-hidden rounded-2xl shadow-2xl sky-background"
+        className={`relative overflow-hidden rounded-2xl shadow-2xl ${getBackgroundClass(backgroundTheme)}`}
         style={{
           width: C.GAME_WIDTH,
           height: C.GAME_HEIGHT,
@@ -997,18 +1321,15 @@ const App: React.FC = () => {
         }}
         onContextMenu={(e) => e.preventDefault()}
       >
-        {clouds.map(cloud => (
-            <CloudComponent key={cloud.id} cloud={cloud} />
-        ))}
-        <MountainsComponent />
-        <BushComponent offset={sceneryOffset} />
-        <TreeComponent offset={sceneryOffset} />
+        {backgroundTheme === 'outdoor' && <OutdoorBackground sceneryOffset={sceneryOffset} clouds={clouds} />}
+        {backgroundTheme === 'city' && <CityBackground sceneryOffset={sceneryOffset} clouds={clouds} />}
+        {backgroundTheme === 'cave' && <CaveBackground sceneryOffset={sceneryOffset} />}
        
         <div className="absolute top-4 right-4 bg-white/50 px-4 py-2 rounded-lg text-gray-700 font-bold text-2xl z-20">
           Score: {score}
         </div>
 
-        {gameState === GameState.PreGame && !showHallOfPay && !showOther && (
+        {gameState === GameState.PreGame && !showHallOfPay && !showOther && !showBackgrounds && (
           <Overlay>
               <h1 className="text-4xl font-bold text-teal-600 mb-2">Pastel Jump</h1>
               <p className="text-gray-600 mb-6">Collect gold, figure out others</p>
@@ -1036,8 +1357,9 @@ const App: React.FC = () => {
         )}
 
         {showHallOfPay && <HallOfPay onClose={() => setShowHallOfPay(false)} />}
-        {showOther && <Other onClose={() => setShowOther(false)} difficulty={difficulty} onDifficultyChange={setDifficulty} highScores={highScores} onShowRules={() => setShowRules(true)}/>}
+        {showOther && <Other onClose={() => setShowOther(false)} difficulty={difficulty} onDifficultyChange={setDifficulty} highScores={highScores} onShowRules={() => setShowRules(true)} onShowBackgrounds={() => { setShowOther(false); setShowBackgrounds(true); }}/>}
         {showRules && <RulesComponent onClose={() => setShowRules(false)} />}
+        {showBackgrounds && <BackgroundSelectionComponent onClose={() => { setShowBackgrounds(false); setShowOther(true); }} currentTheme={backgroundTheme} onSelectTheme={handleSelectTheme} />}
 
 
         {gameState === GameState.GameOver && (

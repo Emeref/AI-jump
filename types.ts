@@ -22,3 +22,5 @@ export type Cloud = {
   speed: number;
   opacity: number;
 };
+
+export type BackgroundTheme = 'outdoor' | 'city' | 'cave';
