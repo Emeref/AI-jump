@@ -1,7 +1,4 @@
 
-
-
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { GameState, Obstacle, Cloud, BackgroundTheme } from './types';
 import * as C from './constants';
@@ -494,10 +491,10 @@ const CaveBackground: React.FC<{ sceneryOffset: number }> = ({ sceneryOffset }) 
 };
 
 
-const Overlay: React.FC<{ children: React.ReactNode; zIndex?: number }> = ({ children, zIndex = 30 }) => (
+const Overlay: React.FC<{ children: React.ReactNode; zIndex?: number; maxWidthClass?: string }> = ({ children, zIndex = 30, maxWidthClass = 'max-w-sm' }) => (
     <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center text-center p-4" style={{ zIndex }}>
         <div
-            className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg w-full max-w-sm"
+            className={`bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg w-full ${maxWidthClass}`}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
         >
@@ -507,33 +504,69 @@ const Overlay: React.FC<{ children: React.ReactNode; zIndex?: number }> = ({ chi
 );
 
 const HallOfPay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const [payData, setPayData] = useState<{ value: number; user: string }[]>([]);
+  type PayData = { value: string; user: string };
+  const [payData, setPayData] = useState<PayData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const generatePayData = () => {
-      const values = [0.01, 0.02, 0.03, 0.05, 0.08];
-      for (let i = 5; i < 50; i++) {
-        const nextValue = values[i - 1] + values[i - 2];
-        values.push(nextValue);
-      }
-      return values.map(value => ({ value, user: 'Username' }));
-    };
-    setPayData(generatePayData());
-  }, []);
+    const fetchHallOfPay = async () => {
+      const sheetUrl = 'https://docs.google.com/spreadsheets/d/1Dkrzo9oExWrekcA7YVM_2h-evd4Lb4eMlXSZFapkFHc/export?format=csv';
 
-  const currencyFormatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  });
+      try {
+          const response = await fetch(sheetUrl);
+          if (!response.ok) {
+              throw new Error(`Network response was not ok: ${response.statusText}`);
+          }
+          const csvText = await response.text();
+          
+          const lines = csvText.trim().split(/\r?\n/);
+
+          if (lines.length === 0) {
+              throw new Error('CSV file is empty.');
+          }
+
+          const data: PayData[] = lines.map(line => {
+              const commaIndex = line.indexOf(',');
+              if (commaIndex !== -1) {
+                  // Handles rows with a comma, e.g., "$0.01,Konrad" or "$0.89,"
+                  const value = line.substring(0, commaIndex).trim().replace(/^"|"$/g, '');
+                  const user = line.substring(commaIndex + 1).trim().replace(/^"|"$/g, '');
+                  if (value) {
+                      return { value, user };
+                  }
+              } else if (line.trim()) {
+                  // Handles rows without a comma, e.g., "$0.89"
+                  const value = line.trim().replace(/^"|"$/g, '');
+                  if (value) {
+                      return { value, user: '' };
+                  }
+              }
+              return null;
+          }).filter((item): item is PayData => item !== null);
+
+
+          if (data.length === 0) {
+              throw new Error('No valid data rows found in the Google Sheet.');
+          }
+
+          setPayData(data);
+      } catch (err) {
+          console.error('Error fetching or parsing Hall of Pay from Google Sheet:', err);
+          setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+      } finally {
+          setIsLoading(false);
+      }
+    };
+
+    fetchHallOfPay();
+  }, []);
   
   const getColorForRow = (index: number, totalRows: number): string => {
-    // First 5 rows: transition from black to a light gray
     if (index < 5) {
       const grayValue = Math.floor((150 / 5) * index);
       return `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
     }
-
-    // Remaining rows: transition through the rainbow
     const hue = 300 - (300 * (index - 5)) / (totalRows - 5);
     return `hsl(${hue}, 80%, 50%)`;
   };
@@ -557,35 +590,64 @@ const HallOfPay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   `;
 
   return (
-    <Overlay>
+    <Overlay maxWidthClass="max-w-md">
         <style>{scrollbarStyles}</style>
         <div className="relative w-full">
             <h2 className="text-3xl font-bold text-teal-600 mb-2">Hall of Pay</h2>
-            <p className="text-gray-500 text-sm mb-4 italic">First to donate on each level will be remembered forever. It can be you.</p>
-            <div className="bg-white/50 p-4 rounded-lg max-h-[400px] overflow-y-auto custom-scrollbar">
-                <table className="w-full text-left">
-                    <thead>
-                        <tr className="border-b-2 border-gray-300">
-                            <th className="p-2 font-bold text-gray-700"></th>
-                            <th className="p-2 font-bold text-gray-700">Name</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {payData.map((row, index) => (
-                            <tr key={index} className="border-b border-gray-200 last:border-b-0">
-                                <td className="p-2 font-mono" style={{ color: getColorForRow(index, payData.length) }}>{`${index + 1}. ${currencyFormatter.format(row.value)}`}</td>
-                                <td className="p-2 text-gray-500 opacity-75">{row.user}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            <p className="text-gray-500 text-sm mb-4 italic">The first person to donate at each level will be remembered forever. It could be you! And, of course, I reserve the right to have the final say if you choose a 'funny' name for yourself."</p>
+            <div className="bg-white/50 p-4 rounded-lg">
+                {isLoading ? (
+                    <div className="min-h-[100px] flex justify-center items-center">
+                        <p className="text-gray-600 font-bold">Loading Hall of Pay...</p>
+                    </div>
+                ) : error ? (
+                    <div className="min-h-[100px] flex justify-center items-center text-center text-red-600">
+                        <div>
+                            <p className="font-bold">Could not load data</p>
+                            <p className="text-sm">{error}</p>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        <table className="w-full text-left table-fixed">
+                            <thead>
+                                <tr className="border-b-2 border-gray-300">
+                                    <th className="p-2 font-bold text-gray-700 w-1/2">Level</th>
+                                    <th className="p-2 font-bold text-gray-700 w-1/2">Name</th>
+                                </tr>
+                            </thead>
+                        </table>
+                        <div className="max-h-[340px] overflow-y-auto custom-scrollbar">
+                             <table className="w-full text-left table-fixed">
+                                <tbody>
+                                    {payData.map((row, index) => (
+                                        <tr key={index} className="border-b border-gray-200 last:border-b-0">
+                                            <td className="p-2 font-mono w-1/2" style={{ color: getColorForRow(index, payData.length) }}>{row.value}</td>
+                                            <td className="p-2 text-gray-500 opacity-75 w-1/2 break-words">{row.user}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                )}
             </div>
-             <button
-                onClick={onClose}
-                className="mt-6 px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
-            >
-                Close
-            </button>
+            <div className="flex justify-center items-center space-x-4 mt-6">
+                <a
+                    href={C.DONATE_LINK}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-8 py-3 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 transition-colors"
+                >
+                    Donate
+                </a>
+                <button
+                    onClick={onClose}
+                    className="px-8 py-3 bg-pink-400 text-white font-bold rounded-lg shadow-md hover:bg-pink-500 transition-colors"
+                >
+                    Close
+                </button>
+            </div>
         </div>
     </Overlay>
   );

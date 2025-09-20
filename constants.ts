@@ -100,7 +100,7 @@ export const GREEN_OBSTACLE_SPAWN_CHANCE = 0.05; // 5% chance
 export const GREEN_OBSTACLE_MIN_SCORE_to_APPEAR = 128; // Appears after 128 points
 
 // Links
-export const DONATE_LINK = 'https://buymeacoffee.com/example';
+export const DONATE_LINK = 'https://buy.stripe.com/bJeaEX9551Su0OQ7zD4Vy00';
 
 // Cloud Properties
 export const CLOUD_COUNT = 6;
