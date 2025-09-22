@@ -763,14 +763,6 @@ const Other: React.FC<{
 };
 
 const RulesComponent: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const obstacleTypes = [
-    { color: 'bg-teal-400', name: 'Normal', effect: 'Pass to score 1 point. Touching ends the game.', appears: 'From start' },
-    { color: 'bg-yellow-400', name: 'Gold', effect: 'Collect for +64 points. Safe to touch.', appears: 'From start' },
-    { color: 'bg-yellow-400 glow', name: 'Glowing Gold', effect: 'Collect for +256 points. Spawns low, moves fast.', appears: 'Score > 768', style: { boxShadow: '0 0 10px 2px rgba(250, 204, 21, 0.7)'}},
-    { color: 'bg-green-500 glow', name: 'Green', effect: 'Teleports you 25% down. Safe to touch.', appears: 'Score > 128', style: { boxShadow: '0 0 10px 2px rgba(34, 197, 94, 0.7)'}},
-    { color: 'bg-blue-500 glow', name: 'Blue', effect: 'Touching ends the game instantly.', appears: 'Score > 512', style: { boxShadow: '0 0 10px 2px rgba(59, 130, 246, 0.7)'}},
-    { color: 'bg-red-500 glow', name: 'Red', effect: 'Touching subtracts 50 points.', appears: 'Score > 1024', style: { boxShadow: '0 0 10px 2px rgba(239, 68, 68, 0.7)'}},
-  ];
   return (
     <Overlay zIndex={40}>
        <h2 className="text-3xl font-bold text-teal-600 mb-4">Game Rules</h2>
@@ -786,18 +778,9 @@ const RulesComponent: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </div>
           <div>
             <h3 className="font-bold text-gray-800">Obstacles</h3>
-            <div className="space-y-3 mt-2">
-              {obstacleTypes.map(o => (
-                <div key={o.name} className="flex items-center space-x-3 text-sm">
-                  <div className={`w-5 h-5 rounded-full flex-shrink-0 ${o.color}`} style={o.style || {}}></div>
-                  <div className="flex-grow">
-                    <p className="font-bold text-gray-700">{o.name}</p>
-                    <p className="text-gray-600">{o.effect}</p>
-                  </div>
-                   <div className="text-xs font-mono bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">{o.appears}</div>
-                </div>
-              ))}
-            </div>
+            <p className="text-gray-700 text-sm mt-1 italic">
+              Not all that glitters is gold... but some of it is! You'll encounter obstacles of many colors. Your mission, should you choose to accept it, is to discover their secrets. Are they friends or foes? Only one way to find out. Have fun experimenting!
+            </p>
           </div>
        </div>
        <button
